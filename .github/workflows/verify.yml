@@ -1,0 +1,40 @@
+name: Verify LangChain reader
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install verification dependencies
+        run: |
+          python -m pip install -r requirements.txt -r requirements-test.txt -r requirements-examples.txt
+          python -m playwright install --with-deps chromium
+      - name: Rebuild committed pages
+        run: |
+          python build.py
+          git diff --exit-code -- docs
+      - name: Check reader behavior and layout
+        run: python verify.py
+      - name: Verify manuscript examples without external services
+        run: python scripts/verify_examples.py
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: langchain-reader-verification
+          path: test-results/

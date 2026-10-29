@@ -1,0 +1,7 @@
+
+/* Shared learning bookshelf navigation */
+.shelf-nav{position:relative;display:flex;align-items:center;gap:14px;font:13px/1.5 "Segoe UI","Microsoft YaHei",sans-serif;white-space:nowrap;margin-left:auto}
+.shelf-nav>a{color:inherit;text-decoration:none}.shelf-switch{position:relative}.shelf-switch>summary{cursor:pointer;list-style:none;padding:8px 10px;border:1px solid var(--line);border-radius:5px}.shelf-switch>summary::-webkit-details-marker{display:none}
+.shelf-menu{position:absolute;right:0;top:calc(100% + 8px);width:240px;padding:8px;background:var(--paper);color:inherit;border:1px solid var(--line);border-radius:6px;box-shadow:0 10px 30px #0002;z-index:100}.shelf-menu a{display:block;padding:12px;white-space:normal;text-decoration:none;color:inherit;border-radius:3px}.shelf-menu a:hover{background:var(--bg)}.shelf-menu [aria-current]{font-weight:700}.shelf-nav a:focus-visible,.shelf-nav summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+body>header:has(.shelf-nav){gap:16px;position:relative;z-index:20}
+@media(max-width:900px){body>header:has(.shelf-nav){height:auto;min-height:80px;flex-wrap:wrap;padding-top:14px;padding-bottom:14px}.shelf-nav{order:3;width:100%;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px;margin:0}.shelf-switch>summary{padding:5px 10px}.shelf-nav .shelf-home{font-size:12px}.shelf-menu{width:min(260px,calc(100vw - 40px))}}

@@ -1,0 +1,689 @@
+{
+  "source": "source/langchain.original.md",
+  "sha256": "9b9e9d44f83387e52c10ce8322ad73be8d1f85c4bcba68e9cc97c3ae7e66bd64",
+  "chapterCount": 5,
+  "nextChapter": "黑匣子审判——LangSmith 与 Agent 的可观测性（仅预告）",
+  "reviewDate": "2026-10-29",
+  "chapters": [
+    {
+      "chapter": 1,
+      "characters": 11246,
+      "blocks": [
+        {
+          "source_index": 1,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 2,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 3,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 4,
+          "language": "json",
+          "repaired": false
+        },
+        {
+          "source_index": 5,
+          "language": "json",
+          "repaired": false
+        },
+        {
+          "source_index": 6,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 7,
+          "language": "python",
+          "repaired": true
+        },
+        {
+          "source_index": 8,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 9,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 10,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 11,
+          "language": "python",
+          "repaired": true
+        },
+        {
+          "source_index": 12,
+          "language": "text",
+          "repaired": false
+        }
+      ]
+    },
+    {
+      "chapter": 2,
+      "characters": 19267,
+      "blocks": [
+        {
+          "source_index": 13,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 14,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 15,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 16,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 17,
+          "language": "json",
+          "repaired": false
+        },
+        {
+          "source_index": 18,
+          "language": "json",
+          "repaired": false
+        },
+        {
+          "source_index": 19,
+          "language": "python",
+          "repaired": true
+        },
+        {
+          "source_index": 20,
+          "language": "bash",
+          "repaired": false
+        },
+        {
+          "source_index": 21,
+          "language": "python",
+          "repaired": true
+        },
+        {
+          "source_index": 22,
+          "language": "python",
+          "repaired": true
+        },
+        {
+          "source_index": 23,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 24,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 25,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 26,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 27,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 28,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 29,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 30,
+          "language": "json",
+          "repaired": false
+        },
+        {
+          "source_index": 31,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 32,
+          "language": "text",
+          "repaired": false
+        }
+      ]
+    },
+    {
+      "chapter": 3,
+      "characters": 22311,
+      "blocks": [
+        {
+          "source_index": 33,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 34,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 35,
+          "language": "json",
+          "repaired": false
+        },
+        {
+          "source_index": 36,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 37,
+          "language": "json",
+          "repaired": false
+        },
+        {
+          "source_index": 38,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 39,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 40,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 41,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 42,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 43,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 44,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 45,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 46,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 47,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 48,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 49,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 50,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 51,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 52,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 53,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 54,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 55,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 56,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 57,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 58,
+          "language": "json",
+          "repaired": false
+        },
+        {
+          "source_index": 59,
+          "language": "json",
+          "repaired": false
+        },
+        {
+          "source_index": 60,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 61,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 62,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 63,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 64,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 65,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 66,
+          "language": "json",
+          "repaired": false
+        },
+        {
+          "source_index": 67,
+          "language": "sql",
+          "repaired": false
+        },
+        {
+          "source_index": 68,
+          "language": "sql",
+          "repaired": false
+        },
+        {
+          "source_index": 69,
+          "language": "sql",
+          "repaired": false
+        },
+        {
+          "source_index": 70,
+          "language": "sql",
+          "repaired": false
+        },
+        {
+          "source_index": 71,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 72,
+          "language": "java",
+          "repaired": false
+        }
+      ]
+    },
+    {
+      "chapter": 4,
+      "characters": 23321,
+      "blocks": [
+        {
+          "source_index": 73,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 74,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 75,
+          "language": "markdown",
+          "repaired": false
+        },
+        {
+          "source_index": 76,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 77,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 78,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 79,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 80,
+          "language": "json",
+          "repaired": false
+        },
+        {
+          "source_index": 81,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 82,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 83,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 84,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 85,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 86,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 87,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 88,
+          "language": "bash",
+          "repaired": true
+        },
+        {
+          "source_index": 89,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 90,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 91,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 92,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 93,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 94,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 95,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 96,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 97,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 98,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 99,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 100,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 101,
+          "language": "sql",
+          "repaired": true
+        },
+        {
+          "source_index": 102,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 103,
+          "language": "json",
+          "repaired": false
+        },
+        {
+          "source_index": 104,
+          "language": "text",
+          "repaired": false
+        }
+      ]
+    },
+    {
+      "chapter": 5,
+      "characters": 19791,
+      "blocks": [
+        {
+          "source_index": 105,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 106,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 107,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 108,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 109,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 110,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 111,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 112,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 113,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 114,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 115,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 116,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 117,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 118,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 119,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 120,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 121,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 122,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 123,
+          "language": "sql",
+          "repaired": false
+        },
+        {
+          "source_index": 124,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 125,
+          "language": "python",
+          "repaired": false
+        },
+        {
+          "source_index": 126,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 127,
+          "language": "text",
+          "repaired": false
+        },
+        {
+          "source_index": 128,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 129,
+          "language": "java",
+          "repaired": false
+        },
+        {
+          "source_index": 130,
+          "language": "java",
+          "repaired": false
+        }
+      ]
+    }
+  ]
+}

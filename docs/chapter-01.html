@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="LangChain 帝国：五章小说式工程阅读，从模型调用走向 Tools、Memory、RAG 与 LangGraph。"><title>失控的 API——当大模型不再只是聊天 · LangChain 帝国</title><script>try{let t=localStorage.getItem('langchain-empire-theme');document.documentElement.dataset.theme=['white','light','dark'].includes(t)?t:'white';document.documentElement.style.setProperty('--reading-size',Math.max(16,Math.min(26,Number(localStorage.getItem('langchain-empire-size'))||18))+'px')}catch(e){}</script><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="shelf-nav.css"><link rel="stylesheet" href="reader.css"><link rel="stylesheet" href="syntax.css"><script src="app.js" defer></script></head>
+<body data-chapter="1"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header><a class="brand" href="index.html">LangChain 帝国<span>THE LANGCHAIN EMPIRE</span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a><a href="/rag-empire-reader/">RAG 帝国</a><a href="/system-design-reader/">系统设计</a><a href="/online-troubleshooting-reader/">生产环境</a><a href="/coding-agent-reader/">Agent 帝国</a><a href="/interview-proof-reader/">面试官的审判</a><a href="/langchain-empire-reader/" aria-current="page">LangChain 帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书" title="搜索全书（/）">搜索</button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换阅读背景">纯白</button></div></header>
+<div class="reader-layout"><aside><a href="index.html">← 全书导航</a><details class="book-toc"><summary>五章工程旅程</summary><nav aria-label="全书章节"><a href="chapter-01.html" aria-current="page"><span>01</span> 失控的 API——当大模型不再只是聊天</a><a href="chapter-02.html"><span>02</span> 工具觉醒——让大模型拥有双手</a><a href="chapter-03.html"><span>03</span> 记忆迷宫——当 Agent 开始遗忘</a><a href="chapter-04.html"><span>04</span> 知识图书馆——当 Agent 学会检索世界</a><a href="chapter-05.html"><span>05</span> 命运之图——LangGraph 与 Agent 的执行法则</a></nav></details><p class="eyebrow">本章目录</p><div class="toc">
+<ul>
+<li><a href="#_1">序幕：一个价值三百万的项目</a></li>
+<li><a href="#_2">第一幕：大模型究竟缺少什么？</a></li>
+<li><a href="#langchain">第二幕：LangChain 帝国的诞生</a></li>
+<li><a href="#_3">第三幕：第一个难题——模型王国的混乱</a></li>
+<li><a href="#chain">第四幕：Chain——为什么要把能力连接起来？</a><ul>
+<li><a href="#chain_1">一次真实的 Chain 任务</a></li>
+</ul>
+</li>
+<li><a href="#langchain_1">第五幕：第一条真正的 LangChain 工作流</a></li>
+<li><a href="#java-langchain4j">第六幕：Java 工程师的选择——LangChain4j</a></li>
+<li><a href="#agent">第七幕：来自 Agent 的第一封战书</a></li>
+<li><a href="#_4">本章知识归档</a><ul>
+<li><a href="#_5">面试官的第一次考验</a></li>
+</ul>
+</li>
+<li><a href="#langchain-api">LangChain 和直接调用大模型 API 有什么区别？</a></li>
+<li><a href="#_6">下一章预告</a><ul>
+<li><a href="#_7">《工具觉醒——让大模型拥有双手》</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<a href="reading.html">我的阅读进度 →</a></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 01 / 05 · 约 21 分钟</p><h1>失控的 API——当大模型不再只是聊天</h1><p>模型抽象 · LCEL · LangChain4j</p><div class="chapter-tools"><a href="reading.html">我的阅读 →</a><span id="read-status" role="status"></span></div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav class="book-links"><a href="chapter-01.html" aria-current="page"><span>01</span> 失控的 API——当大模型不再只是聊天</a><a href="chapter-02.html"><span>02</span> 工具觉醒——让大模型拥有双手</a><a href="chapter-03.html"><span>03</span> 记忆迷宫——当 Agent 开始遗忘</a><a href="chapter-04.html"><span>04</span> 知识图书馆——当 Agent 学会检索世界</a><a href="chapter-05.html"><span>05</span> 命运之图——LangGraph 与 Agent 的执行法则</a></nav><div class="toc">
+<ul>
+<li><a href="#_1">序幕：一个价值三百万的项目</a></li>
+<li><a href="#_2">第一幕：大模型究竟缺少什么？</a></li>
+<li><a href="#langchain">第二幕：LangChain 帝国的诞生</a></li>
+<li><a href="#_3">第三幕：第一个难题——模型王国的混乱</a></li>
+<li><a href="#chain">第四幕：Chain——为什么要把能力连接起来？</a><ul>
+<li><a href="#chain_1">一次真实的 Chain 任务</a></li>
+</ul>
+</li>
+<li><a href="#langchain_1">第五幕：第一条真正的 LangChain 工作流</a></li>
+<li><a href="#java-langchain4j">第六幕：Java 工程师的选择——LangChain4j</a></li>
+<li><a href="#agent">第七幕：来自 Agent 的第一封战书</a></li>
+<li><a href="#_4">本章知识归档</a><ul>
+<li><a href="#_5">面试官的第一次考验</a></li>
+</ul>
+</li>
+<li><a href="#langchain-api">LangChain 和直接调用大模型 API 有什么区别？</a></li>
+<li><a href="#_6">下一章预告</a><ul>
+<li><a href="#_7">《工具觉醒——让大模型拥有双手》</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</details><details class="editor-note"><summary>本章阅读提示</summary><p>本书以 LangChain v1 的 Agent API 为主要语境，保留 LCEL 的组合思想。Java 与 Python 属于不同生态。模型名为占位符，使用前请按供应商配置密钥及可用模型。</p><a href="editorial.html#chapter-1">查看本章技术修订与来源 →</a></details><article><details class="source-media"><summary>原文配图链接（可选）</summary><p><a href="https://images.openai.com/static-rsc-4/OY_-vW2JegG4oZ9g7m_SQAkseSzbfWEBngx8Br5oF8l4QG4z2CGamb0DuMoo8mvTZN1k4HWu7l_qot5x_6nvS-fhNABE0bul5pBpUVcy5hFUbvw6Uq6mjaCLAkPac0UMpHDzdZlOnp5tdRJs2ZInuV2AoOzOj_-KTkKQR9INFDc?purpose=inline">原文配图：The Intersection of Artificial Intelligence and Quantum Computing</a>
+<a href="https://images.openai.com/static-rsc-4/xhuPk4y4RQ_fzLFLXA7Obt6cJqZJ9wJJBvri7lARJhYaKO3CZJ5mw5ZQvjkfenmtLyM995x_fuBQwfuVJqfKKfC_cO_BQJffQ_3iOV5GIlyc3WqYoXD-fNvmk18wCgy6Vf5Pjn4cH6MxKon1ABn5nAmp_5jxIR3_LRM2uFqrHXs?purpose=inline">原文配图：Intelligenza artificiale e produttività degli sviluppatori: luci ed ombre nel rapporto Mulesoft</a>
+<a href="https://images.openai.com/static-rsc-4/VQQTtkmIQ43ETcO-yMLWNuEST9S9ZV2dU33AgR0kAysKcr3Uveh4zYdV8JyGNjdaG6rLD_SQZP6f9oMPrUID3yZuzko_UG2LCIdgMYfARPGI1NNe4ZXi1Ua9YG4SRDR9lZ1DRubG4iD70XD2v3oR3fQGQiOM-Bz8bZkzWbrHa0k?purpose=inline">原文配图：AI Data Centres: Foundations of a Tech-Driven Ecosystem</a></p></details>
+<h2 id="_1">序幕：一个价值三百万的项目</h2>
+<p>公元 2026 年。</p>
+<p>人工智能技术已经席卷全球。</p>
+<p>无数软件公司开始将大语言模型接入自己的产品。</p>
+<p>一个名叫林远的年轻 Java 后端工程师，刚刚加入了一家正在转型的科技公司。</p>
+<p>他的第一个任务并不复杂。</p>
+<p>开发一个企业级智能问答系统。</p>
+<p>用户可以输入问题，系统调用大模型，然后把答案返回给用户。</p>
+<p>林远花了一个下午，便完成了最初的版本。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="nd">@Service</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">ChatService</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">WebClient</span><span class="w"> </span><span class="n">webClient</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">ChatService</span><span class="p">(</span><span class="n">WebClient</span><span class="p">.</span><span class="na">Builder</span><span class="w"> </span><span class="n">builder</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">webClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">builder</span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Mono</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">chat</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">question</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">webClient</span><span class="p">.</span><span class="na">post</span><span class="p">()</span>
+<span class="w">                </span><span class="p">.</span><span class="na">uri</span><span class="p">(</span><span class="s">&quot;https://api.example.com/v1/chat/completions&quot;</span><span class="p">)</span>
+<span class="w">                </span><span class="p">.</span><span class="na">bodyValue</span><span class="p">(</span><span class="n">buildRequest</span><span class="p">(</span><span class="n">question</span><span class="p">))</span>
+<span class="w">                </span><span class="p">.</span><span class="na">retrieve</span><span class="p">()</span>
+<span class="w">                </span><span class="p">.</span><span class="na">bodyToMono</span><span class="p">(</span><span class="n">String</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>代码不算复杂。</p>
+<p>核心流程也极其简单。</p>
+<p>用户提问</p>
+<p>Spring Boot</p>
+<p>组装 JSON，调用 API</p>
+<p>大语言模型</p>
+<p>返回答案</p>
+<p>林远看着屏幕上生成的回答，微微一笑。</p>
+<p>“原来 AI 应用开发这么简单。”</p>
+<p>他甚至觉得，所谓 AI 工程师，不过就是一个懂得调用 HTTP API 的后端程序员。</p>
+<p>直到第二天，技术总监周衡走进办公室。</p>
+<p>“林远，项目做得怎么样？”</p>
+<p>“已经完成了，用户输入问题，模型就能回答。”</p>
+<p>周衡点了点头。</p>
+<p>“那我问你几个问题。”</p>
+<p>“你说。”</p>
+<p>“如果用户问公司内部的数据库设计规范，模型不知道怎么办？”</p>
+<p>林远沉默了一下。</p>
+<p>“可以把文档放进 Prompt。”</p>
+<p>“如果公司有十万份文档呢？”</p>
+<p>“……”</p>
+<p>“如果用户要求查询实时订单呢？”</p>
+<p>“调用数据库？”</p>
+<p>“如果模型要根据查询结果决定下一步调用哪个接口呢？”</p>
+<p>“……”</p>
+<p>“如果一次任务需要连续执行十几个步骤，中途失败之后还要恢复呢？”</p>
+<p>林远意识到事情没有那么简单。</p>
+<p>周衡最后问了一句：</p>
+<p>“你做的是一个大模型聊天接口，还是一个真正的 AI 应用系统？”</p>
+<p>林远没有回答。</p>
+<p>他第一次意识到，二者之间存在着一道巨大的鸿沟。</p>
+<h2 id="_2">第一幕：大模型究竟缺少什么？</h2>
+<p>深夜。</p>
+<p>林远打开电脑，重新审视自己的代码。</p>
+<p>他发现，大模型虽然能够生成文本，但是仍有许多问题。</p>
+<p>周衡在白板上写下了五个词。</p>
+<p>第一，知识边界</p>
+<p>模型无法天然知道公司的私有文档、实时业务数据和最新订单状态。</p>
+<p>第二，上下文管理</p>
+<p>模型 API 通常不会自动替应用保存完整会话。历史消息需要应用管理并按需传递。</p>
+<p>第三，外部操作</p>
+<p>模型可以提出工具调用请求，但真正执行 SQL、访问接口、修改代码，需要应用提供工具执行环境。</p>
+<p>第四，复杂流程编排</p>
+<p>多个模型调用、检索步骤、工具操作和条件分支需要协调。</p>
+<p>第五，工程可靠性</p>
+<p>需要超时、重试、权限校验、可观测性、成本控制和质量评测。</p>
+<p>周衡望着林远。</p>
+<p>“你现在知道问题了吗？”</p>
+<p>“知道了。模型只是提供智能能力，整个应用系统还是得由我们构建。”</p>
+<p>“没错。”</p>
+<p>周衡继续说道：</p>
+<p>“你可以把大语言模型想象成一个能力很强的大脑。”</p>
+<p>“但是光有大脑，并不代表它能独立完成企业任务。”</p>
+<p>“它还需要眼睛、手脚、记忆，以及负责协调行动的执行系统。”</p>
+<p>林远若有所思。</p>
+<p>“那这些东西，都需要我自己写吗？”</p>
+<p>“当然可以。”</p>
+<p>周衡笑了笑。</p>
+<p>“不过，你可能会重复实现别人早就解决过的问题。”</p>
+<p>“所以今天，我带你认识一个新的世界。”</p>
+<p>他在白板中央写下一行字。</p>
+<p>LangChain。</p>
+<h2 id="langchain">第二幕：LangChain 帝国的诞生</h2>
+<details class="source-media"><summary>原文配图链接（可选）</summary><p><a href="https://images.openai.com/static-rsc-4/3J-J905Qrd8Te2e_xzanLz_gS_35OSGvfreTN9se74HRmn052YgHFa7U8rfi4-jLCAiuptTepU6K9sX61U6ZEw8611zGeLsdyTbXvQV4RWscsZbmJlde1g7XgmMRoRx_EETGtdzh8x9T_7XQw1BfEylHb4jI4x5HaTuR6VoFubM?purpose=inline">原文配图：High-Level AI System Architecture</a>
+<a href="https://www.linkedin.com/pulse/high-level-ai-system-architecture-richie-gulati-lqphe">linkedin.com</a></p></details>
+<p>“LangChain 是什么？”</p>
+<p>林远问道。</p>
+<p>周衡没有立即解释，而是反问：</p>
+<p>“你以前做 Java 开发，为什么使用 Spring Boot？”</p>
+<p>“因为它封装了大量通用能力。比如依赖注入、Web 开发、配置管理、组件集成。”</p>
+<p>“如果不用 Spring Boot 呢？”</p>
+<p>“也能实现，不过需要自己处理很多东西。”</p>
+<p>“那么 LangChain 也是类似的思路。”</p>
+<p>周衡在屏幕上打开了官方文档。</p>
+<blockquote>
+<p>LangChain 是一个用于构建大语言模型应用和 Agent 的开源框架，提供模型、工具、消息、检索等组件的统一抽象和集成能力。</p>
+</blockquote>
+<p>“它不是一个大语言模型。”</p>
+<p>“也不是一个向量数据库。”</p>
+<p>“更不是简单的 Prompt 拼接器。”</p>
+<p>“它是帮助开发者组织大模型与外部系统协作的一套框架。”</p>
+<p>林远恍然大悟。</p>
+<p>“也就是说，OpenAI、DeepSeek 等负责提供模型能力，而 LangChain 帮我搭建模型周围的应用逻辑？”</p>
+<p>“是的。”</p>
+<p>“不过还有一个细节。”</p>
+<p>周衡指着官方文档。</p>
+<p>“LangChain 的架构已经经历过演进。早期你经常会看到 <code>LLMChain</code>、<code>SequentialChain</code> 等概念，但在 LangChain v1 中，核心方向更聚焦 Agent、模型与工具抽象，以及 middleware。”</p>
+<p>“所以学习时，我们既要理解最初为什么需要 Chain，也要掌握今天的 Agent 架构。”</p>
+<p>这一点，林远在笔记里画了一个圈。</p>
+<p>参考：<a href="https://docs.langchain.com/oss/python/langchain/overview">LangChain 官方概览</a>、<a href="https://reference.langchain.com/python/langchain">当前 Python API 参考</a>。</p>
+<h2 id="_3">第三幕：第一个难题——模型王国的混乱</h2>
+<p>第二天上午。</p>
+<p>林远接到了第一个新需求。</p>
+<p>公司计划同时接入三家模型供应商：</p>
+<ul>
+<li>OpenAI</li>
+<li>DeepSeek</li>
+<li>Anthropic</li>
+</ul>
+<p>不同任务使用不同模型。</p>
+<p>普通聊天使用成本较低的模型。</p>
+<p>复杂推理使用推理能力更强的模型。</p>
+<p>特殊任务可以选择其他模型。</p>
+<p>林远并不觉得困难。</p>
+<p>“我之前就做过多模型适配。”</p>
+<p>他很快写出了一个接口。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">AIAdapter</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="nf">getProviderName</span><span class="p">();</span>
+
+<span class="w">    </span><span class="n">Object</span><span class="w"> </span><span class="nf">buildRequestBody</span><span class="p">(</span><span class="n">ChatRequest</span><span class="w"> </span><span class="n">request</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="nf">getBaseUrl</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>然后分别实现不同的 Adapter。</p>
+<p>周衡看着代码：</p>
+<p>“思路正确。你已经在用适配器模式解决模型协议差异。”</p>
+<p>“那 LangChain 有什么不同？”</p>
+<p>“它把这样的抽象扩展到了大量模型和 AI 应用组件上。”</p>
+<p>周衡画了一张图。</p>
+<p>业务应用</p>
+<p>聊天 / RAG / Agent</p>
+<p>统一模型抽象</p>
+<p>Chat Model Interface</p>
+<p>OpenAI</p>
+<p>DeepSeek</p>
+<p>Anthropic</p>
+<p>“不过要注意，统一接口不意味着所有供应商的功能完全相同。”</p>
+<p>周衡解释道。</p>
+<p>“例如，工具调用、结构化输出、多模态能力，以及推理内容的字段，各个模型不一定一致。”</p>
+<p>“所以框架可以减少重复代码，但你仍然需要理解底层协议。”</p>
+<p>林远点头。</p>
+<p>他已经理解了 LangChain 的第一层价值：</p>
+<p>提供统一抽象，减少重复开发，同时允许业务按自己的需要选择模型。</p>
+<h2 id="chain">第四幕：Chain——为什么要把能力连接起来？</h2>
+<p>当天下午。</p>
+<p>产品经理又来了。</p>
+<p>“我们希望用户输入一段需求后，系统能自动完成三件事情。”</p>
+<p>“第一，分析用户需求。”</p>
+<p>“第二，将需求拆成开发任务。”</p>
+<p>“第三，根据任务生成对应的技术方案。”</p>
+<p>林远立即想到了三个 Prompt。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>Prompt 1：分析需求
+        ↓
+Prompt 2：拆解任务
+        ↓
+Prompt 3：生成技术方案
+</code></pre></div></div>
+
+<p>但是很快，他遇到了问题。</p>
+<p>第二个 Prompt 需要第一个 Prompt 的输出。</p>
+<p>第三个 Prompt 又依赖第二个 Prompt 的结果。</p>
+<p>他必须不断处理输入输出传递。</p>
+<p>还需要解决：</p>
+<ul>
+<li>上一步输出不符合格式怎么办？</li>
+<li>某个步骤执行失败怎么办？</li>
+<li>如何记录每一步的耗时？</li>
+<li>哪些步骤能够并行执行？</li>
+</ul>
+<p>周衡走了过来。</p>
+<p>“这就是 Chain 思想最容易理解的地方。”</p>
+<p>“所谓 Chain，本质上是把多个处理步骤组合起来，使前一步的输出成为后一步的输入。”</p>
+<p>林远问：</p>
+<p>“这和普通 Java 方法调用有什么区别？”</p>
+<p>“从计算原理上说，没有什么神秘区别。你完全可以自己实现。”</p>
+<p>“框架真正带来的价值，是提供可组合的组件接口，以及围绕这些组件的集成和运行能力。”</p>
+<p>周衡在白板上写道：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>f</mi><mn>3</mn></msub><mo stretchy="false">(</mo><msub><mi>f</mi><mn>2</mn></msub><mo stretchy="false">(</mo><msub><mi>f</mi><mn>1</mn></msub><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex"> y=f_3(f_2(f_1(x))) </annotation></semantics></math></span></p>
+<p>“你看。”</p>
+<p>“输入 <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math></span>，先经过 <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>f</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">f_1</annotation></semantics></math></span>，然后经过 <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>f</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">f_2</annotation></semantics></math></span>，最后得到 <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi></mrow><annotation encoding="application/x-tex">y</annotation></semantics></math></span>。”</p>
+<p>“这就是最简单的顺序链。”</p>
+<h3 id="chain_1">一次真实的 Chain 任务</h3>
+<p>用户输入：</p>
+<blockquote>
+<p>我希望开发一个支持上传 PDF、向量检索和多轮问答的企业知识库。</p>
+</blockquote>
+<p>第一步，需求分析器输出：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;features&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;PDF上传&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;文档解析&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;向量检索&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;多轮问答&quot;</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>第二步，任务拆解器输出：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;tasks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;实现文件上传API&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;实现文档分块&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;集成Embedding模型&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;实现向量检索&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;实现问答接口&quot;</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>第三步，技术方案生成器输出：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>Backend: Spring Boot
+Database: MySQL
+Vector Store: Milvus
+Cache: Redis
+LLM: DeepSeek
+</code></pre></div></div>
+
+<p>林远突然发现：</p>
+<p>“这不就是把原先一个复杂的大 Prompt，拆成几个独立步骤吗？”</p>
+<p>“正是如此。”</p>
+<p>“但是不是任务拆得越细越好？”</p>
+<p>“当然不是。”</p>
+<p>周衡摇头。</p>
+<p>“每调用一次模型，通常都会增加成本和延迟。步骤越多，失败点也越多。”</p>
+<p>“拆分应该有明确收益，比如提升可控性、可测试性，或者让不同步骤使用不同模型。”</p>
+<p>“此外，链也不意味着每一步都必须调用 LLM。普通函数、规则判断、检索器同样可以参与流程。”</p>
+<h2 id="langchain_1">第五幕：第一条真正的 LangChain 工作流</h2>
+<p>夜里十一点。</p>
+<p>周衡打开 Python 编辑器。</p>
+<p>“虽然你的主力技术栈是 Java，但我们先用 Python 理解原生 LangChain 的基本组件。”</p>
+<p>“之后再映射到 LangChain4j 和 Spring Boot。”</p>
+<p>他输入了一段代码。</p>
+<p>以下展示的是使用当前 LangChain 组件组合模型调用的基础示例，模型名称和密钥需要替换成实际可用的配置。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">langchain_openai</span> <span class="kn">import</span> <span class="n">ChatOpenAI</span>
+<span class="kn">from</span> <span class="nn">langchain_core.prompts</span> <span class="kn">import</span> <span class="n">ChatPromptTemplate</span>
+<span class="kn">from</span> <span class="nn">langchain_core.output_parsers</span> <span class="kn">import</span> <span class="n">StrOutputParser</span>
+
+<span class="c1"># 1. 初始化模型；先配置 OPENAI_API_KEY，并替换为可用模型名。</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;your-model-name&quot;</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+<span class="c1"># 2. 创建 Prompt 模板。</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">ChatPromptTemplate</span><span class="o">.</span><span class="n">from_messages</span><span class="p">([</span>
+    <span class="p">(</span><span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;你是一名资深软件架构师。&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;human&quot;</span><span class="p">,</span> <span class="s2">&quot;请分析以下需求：</span><span class="si">{requirement}</span><span class="s2">&quot;</span><span class="p">),</span>
+<span class="p">])</span>
+
+<span class="c1"># 3. 创建输出解析器并组合可运行组件。</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">StrOutputParser</span><span class="p">()</span>
+<span class="n">chain</span> <span class="o">=</span> <span class="n">prompt</span> <span class="o">|</span> <span class="n">model</span> <span class="o">|</span> <span class="n">parser</span>
+
+<span class="c1"># 4. 执行。</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">&quot;requirement&quot;</span><span class="p">:</span> <span class="s2">&quot;开发一个企业级 RAG 系统&quot;</span><span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>林远盯着这一行：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="n">chain</span> <span class="o">=</span> <span class="n">prompt</span> <span class="o">|</span> <span class="n">model</span> <span class="o">|</span> <span class="n">parser</span>
+</code></pre></div></div>
+
+<p>“这个竖线是什么意思？”</p>
+<p>“它表示将前后两个可运行组件组合起来。”</p>
+<p>“执行时，先把输入交给 Prompt 模板，再将生成的消息送给模型，最后把模型输出交给解析器。”</p>
+<p>Input</p>
+<p>{"requirement": "开发一个企业级RAG系统"}</p>
+<p>ChatPromptTemplate</p>
+<p>把变量填入消息模板</p>
+<p>ChatOpenAI</p>
+<p>调用模型生成 AIMessage</p>
+<p>StrOutputParser</p>
+<p>提取文本输出</p>
+<p>String Result</p>
+<p>“这套可组合调用方式通常被称为 LCEL，也就是 LangChain Expression Language。”</p>
+<p>周衡解释道。</p>
+<p>“它背后的重要设计之一是 Runnable 接口。”</p>
+<p>“Runnable 可以理解为一个可执行的处理单元。”</p>
+<p>比如：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>表示单次调用。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="n">results</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">list_of_inputs</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>表示批量执行。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">chain</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">input_data</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>表示以流式方式读取输出。</p>
+<p>周衡特意补充：</p>
+<p>“并不是任意步骤都能真正流式产生输出。实际流式效果取决于组件是否支持流处理。”</p>
+<p>“而且注意，我们这里讲的是组件编排思路。LangChain v1 的高层 Agent API 已经发生变化，不应该把早年的 <code>LLMChain</code> 教程原封不动当成新版本的主流开发方式。”</p>
+<p>林远若有所思。</p>
+<p>“我现在明白了。”</p>
+<p>“以前我把模型调用当作一个特殊的 HTTP 请求。”</p>
+<p>“而 LangChain 把模型、Prompt、解析器，甚至其他业务函数，都组织成可以协作的组件。”</p>
+<p>“对。”</p>
+<p>“但这只不过是 LangChain 帝国最外围的一座城池。”</p>
+<h2 id="java-langchain4j">第六幕：Java 工程师的选择——LangChain4j</h2>
+<p>林远突然问道：</p>
+<p>“我现在的项目是 Java 21 + Spring Boot，难道要为了 LangChain 把后端迁移到 Python？”</p>
+<p>周衡摇了摇头。</p>
+<p>“没有必要。”</p>
+<p>“Python LangChain 并不是 Java 开发者唯一的选择。”</p>
+<p>他打开了另一个项目的文档。</p>
+<p>LangChain4j。</p>
+<p>“它是面向 Java 生态的大模型应用框架，提供模型调用、AI Services、Tools、RAG、聊天记忆以及 Spring Boot 集成等能力。”</p>
+<p>“但它不是 Python LangChain 的逐行翻译，两者的 API 和设计选择存在区别。”</p>
+<p>周衡在白板上比较了几种路线。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="可横向滚动的数据表"><table>
+<thead>
+<tr>
+<th>技术</th>
+<th>主要定位</th>
+<th>适合的场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LangChain（Python）</td>
+<td>模型与 Agent 组件框架</td>
+<td>Python AI 应用、Agent</td>
+</tr>
+<tr>
+<td>LangGraph</td>
+<td>状态化工作流编排</td>
+<td>长任务、复杂 Agent、人工审批</td>
+</tr>
+<tr>
+<td>LangChain4j</td>
+<td>Java AI 应用框架</td>
+<td>Spring Boot、Java RAG、工具调用</td>
+</tr>
+<tr>
+<td>Spring AI</td>
+<td>Spring 生态 AI 应用抽象</td>
+<td>Spring 原生 AI 集成</td>
+</tr>
+<tr>
+<td>LangSmith</td>
+<td>追踪、评测与调试平台</td>
+<td>AI 工程质量管理</td>
+</tr>
+</tbody>
+</table></div>
+<p>林远继续追问：</p>
+<p>“那我之前写的 AIAdapter，是不是完全没用了？”</p>
+<p>“不是。”</p>
+<p>周衡在白板上写下两句话：</p>
+<p>框架负责提供通用能力。</p>
+<p>业务系统负责定义自己的边界。</p>
+<p>“如果你的业务有特殊的 DeepSeek 推理字段、特定的 SSE 事件协议、复杂的模型路由、额度统计，你仍然可能需要自定义实现。”</p>
+<p>“更重要的是，不能因为框架提供了一些接口，就把限流、鉴权、日志、状态持久化全部交给框架。”</p>
+<p>“框架不是完整的企业系统。”</p>
+<p>林远点了点头。</p>
+<p>这一刻，他已经不再把 LangChain 当成某个必须学会的 API 集合。</p>
+<p>而是开始把它当成一种组织 AI 应用的工程思想。</p>
+<h2 id="agent">第七幕：来自 Agent 的第一封战书</h2>
+<p>深夜。</p>
+<p>周衡准备离开办公室。</p>
+<p>就在这时，一封紧急邮件送到了研发部门。</p>
+<p>客户提出了新的需求：</p>
+<blockquote>
+<p>用户输入一个 Git 仓库地址和 Bug 描述。</p>
+<p>系统需要自动获取项目代码，定位问题，验证 Bug 是否存在，提出修复方案，修改代码，并运行测试。</p>
+</blockquote>
+<p>林远看完之后，猛地抬起头。</p>
+<p>“这不就是 Coding Agent 吗？”</p>
+<p>“没错。”</p>
+<p>“那我们刚刚学的 Chain 可以实现吗？”</p>
+<p>“当然可以实现其中一部分。”</p>
+<p>周衡拿起笔，写出了一个固定流程。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>获取代码
+   ↓
+分析 Bug
+   ↓
+生成修复方案
+   ↓
+修改代码
+   ↓
+执行测试
+</code></pre></div></div>
+
+<p>“如果每一步都固定，这是一条普通工作流。”</p>
+<p>“但是假设测试失败了呢？”</p>
+<p>林远回答：</p>
+<p>“那就重新分析，再修改。”</p>
+<p>“如果模型发现 Bug 不在当前文件，需要搜索其他文件呢？”</p>
+<p>“需要决定调用搜索工具。”</p>
+<p>“如果发现项目根本无法构建呢？”</p>
+<p>“可能要先检查环境。”</p>
+<p>“如果修复涉及危险操作呢？”</p>
+<p>“需要人工审批。”</p>
+<p>周衡点头。</p>
+<p>“你发现区别了吗？”</p>
+<p>林远盯着白板。</p>
+<p>突然，他拿起笔，把原来的单向流程改成了一个循环。</p>
+<p>简化的 Agent 执行循环：模型根据观察结果决定是否继续执行</p>
+<p>“这就是 Agent 和简单固定 Chain 的一个重要区别。”</p>
+<p>周衡说道。</p>
+<p>“固定工作流通常由程序预先决定下一步。”</p>
+<p>“而 Agent 可以在一定范围内，根据当前状态、模型输出以及工具执行结果，动态选择下一步行动。”</p>
+<p>“但这不代表 Agent 可以毫无限制地自由运行。”</p>
+<p>“真正的工程系统依然需要设定工具权限、最大执行次数、预算、超时、异常处理和人工审批条件。”</p>
+<p>林远盯着那张图。</p>
+<p>“所以 LangChain 不只是把模型连接起来。”</p>
+<p>“它还可以为模型提供工具，让模型参与决策，并构造一个反复执行、观察和决策的循环。”</p>
+<p>“是的。”</p>
+<p>周衡关掉电脑。</p>
+<p>“而这正是现代 LangChain Agent 架构的核心方向之一。LangChain 的 <code>create_agent</code> 底层使用 LangGraph 提供的能力，而更复杂的状态流转，可以直接用 LangGraph 建模。”</p>
+<p>LangChain OSS Overview+1</p>
+<p>“不过，我们还没开始真正学习 Agent。”</p>
+<p>“为什么？”</p>
+<p>“因为你还不知道模型是怎么使用工具的。”</p>
+<p>林远一怔。</p>
+<p>“工具调用，不就是让模型输出一个函数名吗？”</p>
+<p>周衡笑了。</p>
+<p>“如果真有那么简单，为什么还有那么多 Agent 会在生产环境失控？”</p>
+<h2 id="_4">本章知识归档</h2>
+<p>故事讲到这里，我们把已经出现的概念整理起来。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="可横向滚动的数据表"><table>
+<thead>
+<tr>
+<th>核心概念</th>
+<th>你应该如何理解</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM</td>
+<td>负责语言理解、推理和生成的模型</td>
+</tr>
+<tr>
+<td>Chat Model</td>
+<td>对话模型的统一调用抽象</td>
+</tr>
+<tr>
+<td>Prompt Template</td>
+<td>动态构造模型输入</td>
+</tr>
+<tr>
+<td>Output Parser</td>
+<td>将模型输出转换为需要的形式</td>
+</tr>
+<tr>
+<td>Chain</td>
+<td>把多个处理步骤组合起来</td>
+</tr>
+<tr>
+<td>Runnable / LCEL</td>
+<td>用统一接口组织和执行组件</td>
+</tr>
+<tr>
+<td>Tool</td>
+<td>允许模型请求执行外部能力</td>
+</tr>
+<tr>
+<td>Agent</td>
+<td>根据状态与反馈动态决策的执行系统</td>
+</tr>
+<tr>
+<td>LangGraph</td>
+<td>面向复杂状态化工作流的编排框架</td>
+</tr>
+<tr>
+<td>LangChain4j</td>
+<td>将类似的 AI 应用能力带入 Java 生态</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="_5">面试官的第一次考验</h3>
+<h2 id="langchain-api">LangChain 和直接调用大模型 API 有什么区别？</h2>
+<p><strong>参考思路：</strong>直接调用 API 获取模型能力；LangChain 为模型、消息、工具、检索和 Agent 提供统一抽象与组合方式。鉴权、限流、业务数据和质量验证仍需应用负责。</p>
+<h2 id="_6">下一章预告</h2>
+<details class="source-media"><summary>原文配图链接（可选）</summary><p><a href="https://images.openai.com/static-rsc-4/Wl6vBgPRSgxZSZZk8Rt6gnd2fWbJ_Ia4prFwZeoDi_4ds4f8F-FyNInEE4qW7MFNIarFtmoTrvNSeBoJbuBAVDNz_RgwvnQo7_BxuVBgsAv9JWTur2YNP6tDZNdhwDEqVtImj1f7RoIyDbyvjdmn2Ujvtj1jElsiG-KlozMKAZQ?purpose=inline">原文配图：Manus AI Review 2026: What the Autonomous AI… – Till Freitag</a>
+《LangChain 帝国》第二章</p></details>
+<h3 id="_7">《工具觉醒——让大模型拥有双手》</h3>
+<p>林远将第一次尝试让大模型操作真实的外部系统，却发现模型请求工具调用，与程序安全地执行工具，是两件完全不同的事情。</p>
+<p>下一章将继续保持完整小说叙事，从最基础深入讲解 Tool Calling、Function Calling、JSON Schema、工具注册、参数解析、Agent Loop、ReAct、工具选择、ToolMessage、错误重试、安全隔离、Java/Spring Boot 工程实现，并结合 Coding Agent 自动定位和修复 Bug 的真实工作流。</p>
+<p>而本卷最终会逐步进入 RAG、LangGraph、Memory、MCP、Multi-Agent、LangSmith，以及生产级 AI Agent 的架构设计。</p></article><nav class="chapter-nav" aria-label="上下章"><a href="index.html">← 全书目录</a><a href="chapter-02.html">下一章 →</a></nav></main></div><footer><a href="index.html">LangChain 帝国</a> · 五章正文 · 第六章待续<br><a href="reading.html">我的阅读</a> · <a href="editorial.html">内容说明与技术来源</a> · <a href="https://github.com/wupzl/langchain-empire-reader">项目源码 ↗</a><br><small>小说式工程学习 · 无需登录 · 阅读进度保存在当前浏览器</small></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="dialog-heading"><h2 id="search-title">搜索全书</h2><button id="search-close" aria-label="关闭搜索">×</button></div><label for="query">关键词或代码，例如 工具调用、Checkpoint、InMemorySaver</label><input id="query" type="search" placeholder="搜索五章正文…" autocomplete="off"><p id="search-status" role="status">输入关键词开始搜索</p><div id="search-results"></div></dialog><div id="toast" role="status" aria-live="polite"></div></body></html>

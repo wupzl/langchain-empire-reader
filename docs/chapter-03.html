@@ -1,0 +1,1252 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="description" content="LangChain 帝国：五章小说式工程阅读，从模型调用走向 Tools、Memory、RAG 与 LangGraph。"><title>记忆迷宫——当 Agent 开始遗忘 · LangChain 帝国</title><script>try{let t=localStorage.getItem('langchain-empire-theme');document.documentElement.dataset.theme=['white','light','dark'].includes(t)?t:'white';document.documentElement.style.setProperty('--reading-size',Math.max(16,Math.min(26,Number(localStorage.getItem('langchain-empire-size'))||18))+'px')}catch(e){}</script><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="shelf-nav.css"><link rel="stylesheet" href="reader.css"><link rel="stylesheet" href="syntax.css"><script src="app.js" defer></script></head>
+<body data-chapter="3"><a class="skip" href="#main">跳到正文</a><div id="progress" aria-hidden="true"></div><header><a class="brand" href="index.html">LangChain 帝国<span>THE LANGCHAIN EMPIRE</span></a><nav class="shelf-nav" aria-label="学习项目导航"><a class="shelf-home" href="/">← 学习书架</a><details class="shelf-switch"><summary>切换项目 ▾</summary><div class="shelf-menu"><a href="/pytorch-apprentice/">PyTorch：炼金术士的学徒</a><a href="/ai-era-reader/">AI 纪元</a><a href="/data-empire-reader/">数据帝国</a><a href="/rag-empire-reader/">RAG 帝国</a><a href="/system-design-reader/">系统设计</a><a href="/online-troubleshooting-reader/">生产环境</a><a href="/coding-agent-reader/">Agent 帝国</a><a href="/interview-proof-reader/">面试官的审判</a><a href="/langchain-empire-reader/" aria-current="page">LangChain 帝国</a></div></details></nav><div class="controls"><button id="search-open" aria-label="搜索全书" title="搜索全书（/）">搜索</button><button id="smaller" aria-label="缩小字号">A−</button><button id="larger" aria-label="增大字号">A＋</button><button id="theme" aria-label="切换阅读背景">纯白</button></div></header>
+<div class="reader-layout"><aside><a href="index.html">← 全书导航</a><details class="book-toc"><summary>五章工程旅程</summary><nav aria-label="全书章节"><a href="chapter-01.html"><span>01</span> 失控的 API——当大模型不再只是聊天</a><a href="chapter-02.html"><span>02</span> 工具觉醒——让大模型拥有双手</a><a href="chapter-03.html" aria-current="page"><span>03</span> 记忆迷宫——当 Agent 开始遗忘</a><a href="chapter-04.html"><span>04</span> 知识图书馆——当 Agent 学会检索世界</a><a href="chapter-05.html"><span>05</span> 命运之图——LangGraph 与 Agent 的执行法则</a></nav></details><p class="eyebrow">本章目录</p><div class="toc">
+<ul>
+<li><a href="#bug">序幕：消失的第七个 Bug</a></li>
+<li><a href="#_1">第一幕：大模型真的拥有记忆吗？</a><ul>
+<li><a href="#_2">一、模型为什么能表现得像有记忆？</a></li>
+</ul>
+</li>
+<li><a href="#_3">第二幕：四座记忆之城</a></li>
+<li><a href="#chat-history">第三幕：Chat History——被误解的聊天记录</a><ul>
+<li><a href="#_4">一、线性历史与消息树</a></li>
+</ul>
+</li>
+<li><a href="#context-window">第四幕：Context Window——记忆为什么会溢出？</a><ul>
+<li><a href="#token">一、Token 是什么？</a></li>
+<li><a href="#_5">二、上下文窗口究竟限制什么？</a></li>
+<li><a href="#_6">上下文预算示例</a></li>
+</ul>
+</li>
+<li><a href="#windowtrim-summary">第五幕：遗忘的艺术——Window、Trim 与 Summary</a><ul>
+<li><a href="#sliding-window">方法一：滑动窗口（Sliding Window）</a></li>
+<li><a href="#token_1">方法二：按 Token 裁剪</a></li>
+<li><a href="#summarization">方法三：摘要压缩（Summarization）</a></li>
+<li><a href="#_7">三种方式比较</a></li>
+</ul>
+</li>
+<li><a href="#langchain-memory">第六幕：第一段真正的 LangChain Memory 代码</a><ul>
+<li><a href="#checkpointer">一、使用 Checkpointer 保存短期会话状态</a></li>
+<li><a href="#thread_id">二、为什么 thread_id 很重要？</a></li>
+</ul>
+</li>
+<li><a href="#langchain4jjava">第七幕：LangChain4j——Java 世界里的记忆系统</a><ul>
+<li><a href="#messagewindowchatmemory">一、MessageWindowChatMemory</a></li>
+<li><a href="#tokenwindowchatmemory">二、TokenWindowChatMemory</a></li>
+<li><a href="#chatmemory-ai-service">三、把 ChatMemory 接到 AI Service</a></li>
+<li><a href="#chatmemorystore">四、ChatMemoryStore——把记忆交给数据库</a></li>
+</ul>
+</li>
+<li><a href="#_8">第八幕：长期记忆——跨越会话的秘密</a><ul>
+<li><a href="#_9">一、长期记忆究竟保存什么？</a></li>
+<li><a href="#_10">二、长期记忆应该如何检索？</a></li>
+<li><a href="#langgraph-store">三、LangGraph 中的 Store</a></li>
+</ul>
+</li>
+<li><a href="#_11">第九幕：灾难之夜——服务器在第十九步崩溃</a><ul>
+<li><a href="#checkpoint">一、Checkpoint 究竟是什么？</a></li>
+<li><a href="#checkpoint-agent">二、用 Checkpoint 恢复 Agent</a></li>
+</ul>
+</li>
+<li><a href="#java-21-spring-boot">第十幕：Java 21 + Spring Boot 的生产级记忆架构</a><ul>
+<li><a href="#_12">一、数据库设计</a></li>
+<li><a href="#java">二、Java 上下文构造器</a></li>
+<li><a href="#_13">三、任务恢复的状态机</a></li>
+</ul>
+</li>
+<li><a href="#_14">第十一幕：面试官的记忆审判</a></li>
+<li><a href="#_15">本章核心知识归档</a><ul>
+<li><a href="#_16">检验一下理解程度</a></li>
+</ul>
+</li>
+<li><a href="#mysql">MySQL 保存了全部历史消息，为什么模型仍然可能忘记早期信息？</a></li>
+<li><a href="#_17">尾声：记忆之外，还有未知的知识</a><ul>
+<li><a href="#agent">《知识图书馆——当 Agent 学会检索世界》</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<a href="reading.html">我的阅读进度 →</a></aside><main id="main" class="chapter-main"><div class="chapter-heading"><p class="eyebrow">CHAPTER 03 / 05 · 约 33 分钟</p><h1>记忆迷宫——当 Agent 开始遗忘</h1><p>Chat History · Memory · Checkpoint</p><div class="chapter-tools"><a href="reading.html">我的阅读 →</a><span id="read-status" role="status"></span></div></div><details class="mobile-toc"><summary>章节与本章目录</summary><nav class="book-links"><a href="chapter-01.html"><span>01</span> 失控的 API——当大模型不再只是聊天</a><a href="chapter-02.html"><span>02</span> 工具觉醒——让大模型拥有双手</a><a href="chapter-03.html" aria-current="page"><span>03</span> 记忆迷宫——当 Agent 开始遗忘</a><a href="chapter-04.html"><span>04</span> 知识图书馆——当 Agent 学会检索世界</a><a href="chapter-05.html"><span>05</span> 命运之图——LangGraph 与 Agent 的执行法则</a></nav><div class="toc">
+<ul>
+<li><a href="#bug">序幕：消失的第七个 Bug</a></li>
+<li><a href="#_1">第一幕：大模型真的拥有记忆吗？</a><ul>
+<li><a href="#_2">一、模型为什么能表现得像有记忆？</a></li>
+</ul>
+</li>
+<li><a href="#_3">第二幕：四座记忆之城</a></li>
+<li><a href="#chat-history">第三幕：Chat History——被误解的聊天记录</a><ul>
+<li><a href="#_4">一、线性历史与消息树</a></li>
+</ul>
+</li>
+<li><a href="#context-window">第四幕：Context Window——记忆为什么会溢出？</a><ul>
+<li><a href="#token">一、Token 是什么？</a></li>
+<li><a href="#_5">二、上下文窗口究竟限制什么？</a></li>
+<li><a href="#_6">上下文预算示例</a></li>
+</ul>
+</li>
+<li><a href="#windowtrim-summary">第五幕：遗忘的艺术——Window、Trim 与 Summary</a><ul>
+<li><a href="#sliding-window">方法一：滑动窗口（Sliding Window）</a></li>
+<li><a href="#token_1">方法二：按 Token 裁剪</a></li>
+<li><a href="#summarization">方法三：摘要压缩（Summarization）</a></li>
+<li><a href="#_7">三种方式比较</a></li>
+</ul>
+</li>
+<li><a href="#langchain-memory">第六幕：第一段真正的 LangChain Memory 代码</a><ul>
+<li><a href="#checkpointer">一、使用 Checkpointer 保存短期会话状态</a></li>
+<li><a href="#thread_id">二、为什么 thread_id 很重要？</a></li>
+</ul>
+</li>
+<li><a href="#langchain4jjava">第七幕：LangChain4j——Java 世界里的记忆系统</a><ul>
+<li><a href="#messagewindowchatmemory">一、MessageWindowChatMemory</a></li>
+<li><a href="#tokenwindowchatmemory">二、TokenWindowChatMemory</a></li>
+<li><a href="#chatmemory-ai-service">三、把 ChatMemory 接到 AI Service</a></li>
+<li><a href="#chatmemorystore">四、ChatMemoryStore——把记忆交给数据库</a></li>
+</ul>
+</li>
+<li><a href="#_8">第八幕：长期记忆——跨越会话的秘密</a><ul>
+<li><a href="#_9">一、长期记忆究竟保存什么？</a></li>
+<li><a href="#_10">二、长期记忆应该如何检索？</a></li>
+<li><a href="#langgraph-store">三、LangGraph 中的 Store</a></li>
+</ul>
+</li>
+<li><a href="#_11">第九幕：灾难之夜——服务器在第十九步崩溃</a><ul>
+<li><a href="#checkpoint">一、Checkpoint 究竟是什么？</a></li>
+<li><a href="#checkpoint-agent">二、用 Checkpoint 恢复 Agent</a></li>
+</ul>
+</li>
+<li><a href="#java-21-spring-boot">第十幕：Java 21 + Spring Boot 的生产级记忆架构</a><ul>
+<li><a href="#_12">一、数据库设计</a></li>
+<li><a href="#java">二、Java 上下文构造器</a></li>
+<li><a href="#_13">三、任务恢复的状态机</a></li>
+</ul>
+</li>
+<li><a href="#_14">第十一幕：面试官的记忆审判</a></li>
+<li><a href="#_15">本章核心知识归档</a><ul>
+<li><a href="#_16">检验一下理解程度</a></li>
+</ul>
+</li>
+<li><a href="#mysql">MySQL 保存了全部历史消息，为什么模型仍然可能忘记早期信息？</a></li>
+<li><a href="#_17">尾声：记忆之外，还有未知的知识</a><ul>
+<li><a href="#agent">《知识图书馆——当 Agent 学会检索世界》</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</details><details class="editor-note"><summary>本章阅读提示</summary><p>ChatMemory 保存当前窗口，不等于完整历史。InMemorySaver 与 InMemoryStore 仅保存在进程内；重启恢复需要持久化后端，thread_id 不能替代身份和权限校验。</p><a href="editorial.html#chapter-3">查看本章技术修订与来源 →</a></details><article><details class="source-media"><summary>原文配图链接（可选）</summary><p><a href="https://images.openai.com/static-rsc-4/5tPktcwxZ1OfGkQjHJ1C1IuqEhs9RRiPf5y_N9nufcXDvAg1qW5_7ytWM_CTyBtGsNmEjbOu9bWCCUCWyajzxQPPl2o8pWhYJRWY4HYg61dVwADUta2mH4NEZWRBbaubDOk7ULUeBmkW-CGdtUDNhuS0tgbzX_8TvO3hcjmROYc?purpose=inline">原文配图：A Digitális Tudattalan Architektúrája | Varga Zoltán</a>
+<a href="https://images.openai.com/static-rsc-4/yKEyIBgQSpsPBZUP9lhTPZoKAFCWq2Pd5DK9AWPll1w7B9vpXACmk3Vue_mQoQ2P56w0K53Qam1gInaf3X3RuK9mnoUhG8HuFRI8aTsuV4wakEs3Bm51dkKJQZmAIT572-jqcFdOT-6McEhau_UXKuUkzrdnXhJ4z8x31y0WWOs?purpose=inline">原文配图：Learning from the Mysterious Stealth AI 'Space Bunny': Practical Lessons for Engaging with Cutting-Edge Technology｜mk_pr_12</a>
+<a href="https://images.openai.com/static-rsc-4/ztDkzTgoOMr8DuAx-alkEOmabBAchJDtg7aT3q1PVmgChSJY8Z5FS9ltr3jUWKOY9UHdWD_UPrttuzb9gAa_HMYwFsoJeyD86xbNbX1aEzjraT6cHK75dcjD6jKQ07VnKhYgLBOX2LtN2E2vU_A0Fbi9pr7H38CEiqhMObdlovw?purpose=inline">原文配图：The Fork Winter (2029) | Laurent Bindschaedler</a></p></details>
+<h2 id="bug">序幕：消失的第七个 Bug</h2>
+<p>公元 2026 年，凌晨三点十七分。</p>
+<p>星海科技研发中心。</p>
+<p>林远正盯着一块不断滚动的监控屏幕。</p>
+<p>经过前两章的努力，他已经掌握了 LangChain 的基本思想，并且成功为 Coding Agent 接入了代码搜索、文件读取、Git 操作和测试工具。</p>
+<p>现在，他的 Coding Agent 已经能够完成这样的任务：</p>
+<p>用户输入 Git 仓库地址，提交 Bug 描述。</p>
+<p>Agent 自动获取代码、分析问题、定位文件、生成补丁，并在隔离环境中执行测试。</p>
+<p>但今晚，整个系统出现了一个奇怪的故障。</p>
+<p>任务开始时，Agent 表现正常。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>Step 1: 读取项目目录
+Step 2: 分析 pom.xml
+Step 3: 搜索 UserService
+Step 4: 读取相关代码
+Step 5: 搜索异常调用链
+Step 6: 分析数据库查询逻辑
+Step 7: 生成 Bug 复现方案
+</code></pre></div></div>
+
+<p>然而，到了第十八步，模型突然说出了一句话：</p>
+<blockquote>
+<p>请告诉我需要检查哪个 Git 仓库，以及具体的 Bug 描述。</p>
+</blockquote>
+<p>林远怔住了。</p>
+<p>“什么？”</p>
+<p>“我不是一开始就告诉你了吗？”</p>
+<p>他向上翻动日志。</p>
+<p>最早的用户输入依然清清楚楚地保存在数据库里。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>项目：order-service
+
+Bug：
+高并发情况下，库存扣减偶尔出现负数。
+
+要求：
+先验证问题是否存在，再分析原因，
+最后生成修复方案。
+</code></pre></div></div>
+
+<p>可是模型似乎完全忘记了这件事。</p>
+<p>林远立即检查 MySQL。</p>
+<p>历史消息没有丢失。</p>
+<p>再检查 Redis。</p>
+<p>任务缓存也正常。</p>
+<p>他甚至重新查看了 Agent 的工具调用日志。</p>
+<p>所有记录都在。</p>
+<p>“数据明明还在，为什么模型不知道？”</p>
+<p>就在这时，技术总监周衡走了进来。</p>
+<p>他看了一眼屏幕，问道：</p>
+<p>“你每次调用模型，都发送了哪些消息？”</p>
+<p>林远打开请求日志。</p>
+<p>里面只有最近几条工具结果。</p>
+<p>周衡没有立刻解释，而是拿起笔，在白板上写下一句话。</p>
+<p>数据库里存在的信息，不等于模型当前能够看到的信息。</p>
+<p>林远第一次意识到：</p>
+<p>他可能从一开始，就误解了大语言模型的“记忆”。</p>
+<h2 id="_1">第一幕：大模型真的拥有记忆吗？</h2>
+<p>周衡在白板上画了两个人。</p>
+<p>一个是普通人。</p>
+<p>另一个是大语言模型。</p>
+<p>“林远，我现在告诉你一个数字。”</p>
+<p>“73921。”</p>
+<p>“你记住了吗？”</p>
+<p>“记住了。”</p>
+<p>“现在我去隔壁办公室，再回来问你，你大概率还能记住。”</p>
+<p>“对。”</p>
+<p>“但对典型的无状态聊天模型 API 来说，情况不同。”</p>
+<p>周衡打开终端。</p>
+<p>第一次请求：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;我的项目叫 order-service&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>模型回答：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>好的，你的项目叫 order-service。
+</code></pre></div></div>
+
+<p>第二次，他只发送：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;我的项目叫什么？&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>“你认为模型能回答吗？”</p>
+<p>林远犹豫了一下。</p>
+<p>“正常来说，不能。因为第二次调用没有项目名。”</p>
+<p>“正确。”</p>
+<p>周衡解释：</p>
+<p>“对于典型的无状态 Chat API，每次请求都是一次独立的模型推理。”</p>
+<p>“模型不会自动把上一轮对话写入权重，也不会因为你调用过一次接口，就天然获得持久的会话记忆。”</p>
+<p>“有些供应商提供服务端会话、响应引用或状态保存功能，但那是额外的状态管理能力，不能和模型本身的永久记忆混为一谈。”</p>
+<p>林远突然想起自己最早的聊天系统。</p>
+<p>“我以前的消息树，就是在数据库里保存每条消息，然后每次请求重新构造历史消息链。”</p>
+<p>“正是这样。”</p>
+<p>“你其实已经自己实现过一种会话上下文管理机制。”</p>
+<h3 id="_2">一、模型为什么能表现得像有记忆？</h3>
+<p>周衡写下：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>P</mi><mo stretchy="false">(</mo><mi>Y</mi><mo>∣</mo><mi>X</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex"> P(Y\mid X) </annotation></semantics></math></span></p>
+<p>“可以把生成过程简化理解为：模型根据当前提供的上下文 <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi></mrow><annotation encoding="application/x-tex">X</annotation></semantics></math></span>，预测和生成输出 <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi></mrow><annotation encoding="application/x-tex">Y</annotation></semantics></math></span>。”</p>
+<p>“当你把历史对话重新传进去，模型就能利用这些历史信息回答。”</p>
+<p>第一次：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>User: 我的项目叫 order-service
+Assistant: 好的
+</code></pre></div></div>
+
+<p>第二次：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>User: 我的项目叫 order-service
+Assistant: 好的
+User: 我的项目叫什么？
+</code></pre></div></div>
+
+<p>模型看到完整上下文，才能回答：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>order-service
+</code></pre></div></div>
+
+<p>林远恍然大悟。</p>
+<p>“所以我们平时说的 Chat Memory，其实通常是应用负责保存和重新提供历史信息？”</p>
+<p>“没错。”</p>
+<p>“还有一个重要区别。”</p>
+<p>“记忆存储，是保存信息；记忆检索，是找到信息；上下文注入，是让模型当前看到信息。”</p>
+<p>“这三个动作不能混为一谈。”</p>
+<h2 id="_3">第二幕：四座记忆之城</h2>
+<p>周衡带着林远来到公司的 AI 架构展示室。</p>
+<p>巨大的全息屏幕亮起。</p>
+<p>屏幕上出现了四座由光线连接的城市。</p>
+<p>会话历史</p>
+<p>Chat History</p>
+<p>保存用户与模型的完整交互记录，可用于审计、回放和重新构造上下文。</p>
+<p>工作上下文</p>
+<p>Working Context</p>
+<p>当前实际发送给模型的消息、摘要、工具结果与相关证据。</p>
+<p>长期记忆</p>
+<p>Long-term Memory</p>
+<p>跨会话保留有价值的事实、偏好和经验，需要在相关时检索。</p>
+<p>任务检查点</p>
+<p>Checkpoint</p>
+<p>保存工作流执行状态，用于中断恢复、审批等待和状态回溯。</p>
+<p>“这四者之间存在联系，但职责不同。”</p>
+<p>周衡解释。</p>
+<p>“完整历史可以存储在 MySQL 中。”</p>
+<p>“当前工作上下文可以由最近消息、摘要和检索结果组成。”</p>
+<p>“长期记忆可以放在数据库或者支持检索的存储系统里。”</p>
+<p>“任务检查点则需要保存 Agent 执行状态。”</p>
+<p>“你需要根据实际需求组合它们。”</p>
+<p>林远问：</p>
+<p>“LangChain 都支持吗？”</p>
+<p>“支持相关的抽象和实现方式。现代 LangChain 的短期记忆基于 Agent 状态及 Checkpointer；长期记忆则可以通过 Store 保存跨 Thread 的信息。”</p>
+<p>“现在，我们先进入最容易理解的第一座城。”</p>
+<h2 id="chat-history">第三幕：Chat History——被误解的聊天记录</h2>
+<p>周衡打开了林远之前的聊天系统设计。</p>
+<p>其中有一张消息表：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>chat_id
+message_id
+parent_message_id
+role
+content
+created_at
+</code></pre></div></div>
+
+<p>林远解释：</p>
+<p>“为了支持编辑消息和重新生成，我用 parentMessageId 保存消息之间的父子关系。”</p>
+<p>“每次调用模型，我都会从当前节点向上回溯，构造当前分支的历史消息。”</p>
+<p>周衡点头。</p>
+<p>“这个设计很有代表性。”</p>
+<p>“因为历史对话不一定是一条简单的线。”</p>
+<p>“当用户修改过去的提问、重新生成回答时，可能产生多个对话分支。”</p>
+<h3 id="_4">一、线性历史与消息树</h3>
+<p>一次编辑或重新生成可能形成新的对话分支。实际构造上下文时，应选择目标分支，而不是简单取整个 chat_id 下所有消息。</p>
+<p>“假设用户现在选中的是 D。”</p>
+<p>周衡问：</p>
+<p>“你应该向模型传入哪些历史消息？”</p>
+<p>林远回答：</p>
+<p>“A、B、C、D 所在的路径。不能把另一条分支 C' 混进来。”</p>
+<p>“正确。”</p>
+<p>“当然，如果当前是在 D 之后继续提问，才需要把新用户消息追加到这条路径上。”</p>
+<p>“而如果是在 B 之后重新生成回答，则应按重新生成的语义确定分支父节点，不能把旧回答本身当成新的用户指令。”</p>
+<p>林远发现：</p>
+<p>“LangChain 的 Memory，和我在 MySQL 里面保存消息历史，其实不完全相同。”</p>
+<p>“是的。”</p>
+<p>“特别是在 LangChain4j 中，官方明确区分聊天记忆与完整历史的需求。其 ChatMemory 可以按照窗口策略淘汰消息。如果你要永久保存全部历史，应该单独设计历史记录存储。”</p>
+<p>周衡在白板上写下：</p>
+<p>完整历史 ≠ 当前送给模型的记忆窗口。</p>
+<p>这是林远记下的第一个核心结论。</p>
+<h2 id="context-window">第四幕：Context Window——记忆为什么会溢出？</h2>
+<p>第二天。</p>
+<p>Coding Agent 又一次执行了复杂 Bug 修复任务。</p>
+<p>这一次，模型没有忘记项目名。</p>
+<p>但是执行到第十二轮时，接口开始报错。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>Context length exceeded
+</code></pre></div></div>
+
+<p>林远皱起眉头。</p>
+<p>“我已经保存了完整历史，为什么还是不行？”</p>
+<p>周衡回答：</p>
+<p>“因为保存能力是存储系统的问题。”</p>
+<p>“上下文窗口是模型输入处理能力的问题。”</p>
+<p>“数据库可以保存数百万条消息。”</p>
+<p>“但你不能无限制地把所有消息塞进一次模型请求。”</p>
+<h3 id="token">一、Token 是什么？</h3>
+<p>“首先，你需要理解 Token。”</p>
+<p>周衡说道：</p>
+<p>“模型通常不会直接按照 Java 的字符数量计算上下文。”</p>
+<p>“文本会经过 Tokenizer，被编码为一系列 Token ID。”</p>
+<p>“一个 Token 可能对应一个英文单词、词的一部分、标点或汉字相关的文本片段。”</p>
+<p>“因此，不能简单认为一个汉字就等于一个 Token，也不能认为一个英文单词就一定等于一个 Token。”</p>
+<h3 id="_5">二、上下文窗口究竟限制什么？</h3>
+<p>对于一次模型推理，可以用下面的方式规划 Token 预算：</p>
+<p><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>T</mi><mtext>input</mtext></msub><mo>+</mo><msub><mi>T</mi><mtext>output</mtext></msub><mo>≤</mo><msub><mi>T</mi><mtext>context</mtext></msub></mrow><annotation encoding="application/x-tex"> T_{\text{input}}+T_{\text{output}}\leq T_{\text{context}} </annotation></semantics></math></span></p>
+<p>其中：</p>
+<ul>
+<li><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>T</mi><mtext>input</mtext></msub></mrow><annotation encoding="application/x-tex">T_{\text{input}}</annotation></semantics></math></span>：输入的消息、工具描述、检索内容等占用的 Token。</li>
+<li><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>T</mi><mtext>output</mtext></msub></mrow><annotation encoding="application/x-tex">T_{\text{output}}</annotation></semantics></math></span>：为本次输出预留的 Token。</li>
+<li><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>T</mi><mtext>context</mtext></msub></mrow><annotation encoding="application/x-tex">T_{\text{context}}</annotation></semantics></math></span>：模型支持的上下文容量。</li>
+</ul>
+<p>不同模型和 API 对输出上限、推理 Token 和上下文计费的定义可能不同，因此工程上要按实际模型文档留足余量。</p>
+<p>“假设一个模型的可用上下文容量为 128K Token。”</p>
+<p>“你不能把 128K 全部塞满历史消息。”</p>
+<p>“因为还需要留位置给模型输出、工具定义、新的检索结果等内容。”</p>
+<h3 id="_6">上下文预算示例</h3>
+<div class="table-scroll" tabindex="0" role="region" aria-label="可横向滚动的数据表"><table>
+<thead>
+<tr>
+<th>用途</th>
+<th style="text-align: right;">Token 预算</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>历史对话</td>
+<td style="text-align: right;">40,000</td>
+</tr>
+<tr>
+<td>检索文档</td>
+<td style="text-align: right;">30,000</td>
+</tr>
+<tr>
+<td>工具与系统开销</td>
+<td style="text-align: right;">8,000</td>
+</tr>
+<tr>
+<td>输出预留</td>
+<td style="text-align: right;">16,000</td>
+</tr>
+<tr>
+<td>已分配</td>
+<td style="text-align: right;">94,000（约 73.4%）</td>
+</tr>
+<tr>
+<td>剩余容量</td>
+<td style="text-align: right;">34,000</td>
+</tr>
+</tbody>
+</table></div>
+<p>总容量假设为 128,000 Token。</p>
+<p>这是用于理解预算的简化演示，并非某个具体模型的实际限制。</p>
+<p>林远调整了表中的预算。</p>
+<p>他发现，聊天历史越长，留给检索结果和模型输出的空间就越小。</p>
+<p>周衡问：</p>
+<p>“那你现在准备怎么解决？”</p>
+<p>“直接删除最早的消息？”</p>
+<p>“可以。但这只是最简单的策略。”</p>
+<p>“接下来我们讨论三种常见的方法。”</p>
+<h2 id="windowtrim-summary">第五幕：遗忘的艺术——Window、Trim 与 Summary</h2>
+<p>周衡打开一张长长的对话记录。</p>
+<p>上面有五十条消息。</p>
+<p>“我们假设当前只允许保留其中一部分内容。”</p>
+<p>“你会怎么做？”</p>
+<h3 id="sliding-window">方法一：滑动窗口（Sliding Window）</h3>
+<p>“最容易实现的方法，是只保留最近 N 条消息。”</p>
+<p>例如：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>原始历史：
+M1 M2 M3 M4 M5 M6 M7 M8 M9 M10
+
+窗口大小：4
+
+保留：
+M7 M8 M9 M10
+</code></pre></div></div>
+
+<p>“这有什么优势？”</p>
+<p>林远回答：</p>
+<p>“实现简单，开销较小。”</p>
+<p>“缺点？”</p>
+<p>“最初的重要信息可能被删除。”</p>
+<p>“没错。”</p>
+<p>“例如用户第一轮就告诉 Agent：绝对不要修改数据库 Schema。”</p>
+<p>“但这条要求如果只是存放在被裁剪的普通历史里，后续便可能消失。”</p>
+<p>“因此不能把安全约束寄托在普通聊天记忆中。关键权限和任务约束应当由可信的应用状态与执行策略持续维护。”</p>
+<h3 id="token_1">方法二：按 Token 裁剪</h3>
+<p>周衡继续说道：</p>
+<p>“仅按照消息数量截断，其实很粗糙。”</p>
+<p>“因为一条消息可能只有十个 Token，也可能有两万个。”</p>
+<p>“所以可以按照 Token 预算控制历史消息。”</p>
+<p>例如：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>Token Budget: 8000
+
+优先保留：
+系统指令
+最近的用户消息
+最近的工具调用及结果
+关键任务状态
+</code></pre></div></div>
+
+<p>“裁剪时还要保持消息协议完整。”</p>
+<p>“尤其是 Tool Call 和对应的 ToolMessage，不能随便删除其中一半，否则某些模型接口会拒绝这种不完整的消息序列。”</p>
+<h3 id="summarization">方法三：摘要压缩（Summarization）</h3>
+<p>林远问：</p>
+<p>“如果之前的消息里面有重要信息，但上下文又放不下怎么办？”</p>
+<p>周衡拿起笔。</p>
+<p>“这就需要摘要。”</p>
+<p>他展示了一段对话。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>第1轮：用户介绍项目架构
+第2轮：Agent读取pom.xml
+第3轮：Agent搜索库存模块
+第4轮：Agent定位扣减逻辑
+第5轮：Agent检查数据库事务
+第6轮：Agent运行并发测试
+第7轮：Agent发现库存约束问题
+...
+</code></pre></div></div>
+
+<p>“我们没有必要永久把所有原始工具输出传给模型。”</p>
+<p>“可以把已经完成的阶段压缩成一份任务摘要。”</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>任务摘要：
+
+项目：order-service
+
+目标：
+验证并修复高并发库存扣减出现负数的问题。
+
+已完成：
+1. 检查库存扣减相关代码
+2. 分析事务边界
+3. 构建并发复现测试
+
+已确认：
+并发测试在修复前出现库存为负的结果。
+
+待完成：
+1. 设计并发安全修复
+2. 应用补丁
+3. 重新运行测试
+
+约束：
+不得修改生产数据库。
+</code></pre></div></div>
+
+<p>林远看完后说道：</p>
+<p>“这样既节省 Token，又保留了重要信息。”</p>
+<p>“对，但摘要同样可能遗漏或者扭曲事实。”</p>
+<p>“所以不要简单理解成‘压缩后就不会丢信息’。”</p>
+<p>“对于 Coding Agent，我更推荐把重要任务字段结构化保存，并保留可追溯的证据引用。”</p>
+<h3 id="_7">三种方式比较</h3>
+<div class="table-scroll" tabindex="0" role="region" aria-label="可横向滚动的数据表"><table>
+<thead>
+<tr>
+<th>策略</th>
+<th>优点</th>
+<th>主要缺点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Message Window</td>
+<td>简单，成本低</td>
+<td>容易遗忘早期事实</td>
+</tr>
+<tr>
+<td>Token Trimming</td>
+<td>更接近容量约束</td>
+<td>仍可能丢失重要内容</td>
+</tr>
+<tr>
+<td>Summarization</td>
+<td>保留较长历史的概要</td>
+<td>可能产生摘要错误、额外模型成本</td>
+</tr>
+<tr>
+<td>结构化状态 + 摘要</td>
+<td>更利于复杂任务恢复</td>
+<td>需要设计状态模型和更新逻辑</td>
+</tr>
+</tbody>
+</table></div>
+<p>周衡补充：</p>
+<p>“在当前 LangChain 中，<code>SummarizationMiddleware</code> 就能帮助 Agent 在历史达到阈值后进行摘要压缩。不过阈值和保留策略都需要结合业务调整。”</p>
+<p>GitHub</p>
+<p>“真正成熟的方案，往往不是四选一。”</p>
+<p>“而是把它们组合使用。”</p>
+<h2 id="langchain-memory">第六幕：第一段真正的 LangChain Memory 代码</h2>
+<p>第二天下午。</p>
+<p>周衡打开 Python 编辑器。</p>
+<p>“理论已经讲得够多了。”</p>
+<p>“我们现在开始实践。”</p>
+<p>“第一步，让 Agent 能够记住同一会话的前后两轮对话。”</p>
+<h3 id="checkpointer">一、使用 Checkpointer 保存短期会话状态</h3>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">langchain.agents</span> <span class="kn">import</span> <span class="n">create_agent</span>
+<span class="kn">from</span> <span class="nn">langgraph.checkpoint.memory</span> <span class="kn">import</span> <span class="n">InMemorySaver</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">create_agent</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;openai:your-model-name&quot;</span><span class="p">,</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[],</span>
+    <span class="n">checkpointer</span><span class="o">=</span><span class="n">InMemorySaver</span><span class="p">()</span>
+<span class="p">)</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;configurable&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;thread_id&quot;</span><span class="p">:</span> <span class="s2">&quot;conversation-001&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># 第一次对话</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;我的项目叫 order-service&quot;</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config</span>
+<span class="p">)</span>
+
+<span class="c1"># 第二次对话</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;我刚才说的项目叫什么？&quot;</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;messages&quot;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>林远看了几遍。</p>
+<p>“我发现没有手动拼接第一次的消息。”</p>
+<p>“对。”</p>
+<p>“因为我们给 Agent 配置了 Checkpointer。”</p>
+<p>“同一个 <code>thread_id</code> 对应的状态会被保存，后续调用可以基于此前状态继续。”</p>
+<p>“但要记住，这里的 <code>InMemorySaver</code> 是进程内存实现。”</p>
+<p>“如果应用重启，原来保存在进程内的数据就不能依靠它恢复。”</p>
+<p>“正式环境通常应该使用数据库支持的持久化 Checkpointer。”</p>
+<h3 id="thread_id">二、为什么 thread_id 很重要？</h3>
+<p>周衡让林远修改第二次请求。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="n">other_config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;configurable&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;thread_id&quot;</span><span class="p">:</span> <span class="s2">&quot;conversation-002&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;我的项目叫什么？&quot;</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">other_config</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<p>“这一次会怎么样？”</p>
+<p>林远回答：</p>
+<p>“如果这个 Thread 之前没有相关上下文，模型就不知道项目名。”</p>
+<p>“没错。”</p>
+<p>“Thread 可以理解为某个独立的会话或执行线程的状态标识。”</p>
+<p>“它和 Java 的线程不是同一个概念。”</p>
+<p>“更重要的是：thread_id 并不是身份认证凭证。”</p>
+<p>“你不能允许用户随意提交另一个人的 thread_id，就能读取对应记忆。”</p>
+<p>“服务端应该验证当前登录用户是否有权访问这个会话，然后再为 Agent 构造配置。”</p>
+<h2 id="langchain4jjava">第七幕：LangChain4j——Java 世界里的记忆系统</h2>
+<p>林远关闭 Python 编辑器。</p>
+<p>“好了，现在让我看看 Java 的实现。”</p>
+<p>周衡点头。</p>
+<p>“LangChain4j 提供了 ChatMemory 抽象。”</p>
+<p>“先看最简单的窗口记忆。”</p>
+<h3 id="messagewindowchatmemory">一、MessageWindowChatMemory</h3>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">dev.langchain4j.memory.chat.MessageWindowChatMemory</span><span class="p">;</span>
+
+<span class="kd">var</span><span class="w"> </span><span class="n">memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MessageWindowChatMemory</span>
+<span class="w">        </span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
+<span class="w">        </span><span class="p">.</span><span class="na">id</span><span class="p">(</span><span class="s">&quot;conversation-001&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="na">maxMessages</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>“它会保留一定数量的最近消息，并在超出窗口时淘汰较早的消息。”</p>
+<p>林远问：</p>
+<p>“如果用户发了一条二十万 Token 的消息，<code>maxMessages(20)</code> 还能起作用吗？”</p>
+<p>“它能限制消息条数，但不能保证 Token 总量适合模型。”</p>
+<p>“所以对 Token 预算要求较高的系统，可以使用 <code>TokenWindowChatMemory</code>。”</p>
+<h3 id="tokenwindowchatmemory">二、TokenWindowChatMemory</h3>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="kd">var</span><span class="w"> </span><span class="n">memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TokenWindowChatMemory</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
+<span class="w">        </span><span class="p">.</span><span class="na">id</span><span class="p">(</span><span class="s">&quot;conversation-001&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="na">maxTokens</span><span class="p">(</span><span class="mi">8000</span><span class="p">,</span><span class="w"> </span><span class="n">tokenCountEstimator</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>“这里的 <code>tokenCountEstimator</code> 需要提供与目标模型相匹配或足够可靠的 Token 估算能力。”</p>
+<p>“估算结果不一定和模型服务端的最终计数完全一致，所以实际还应留有余量。”</p>
+<p>LangChain4j 当前文档对两种内置窗口记忆策略进行了明确区分：一种按消息数量控制，另一种按 Token 数量控制，并在需要时淘汰完整消息。</p>
+<h3 id="chatmemory-ai-service">三、把 ChatMemory 接到 AI Service</h3>
+<p>周衡继续写道：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">dev.langchain4j.service.MemoryId</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dev.langchain4j.service.UserMessage</span><span class="p">;</span>
+
+<span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">CodingAssistant</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="nf">chat</span><span class="p">(</span>
+<span class="w">        </span><span class="nd">@MemoryId</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">conversationId</span><span class="p">,</span>
+<span class="w">        </span><span class="nd">@UserMessage</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">message</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>然后配置：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="n">CodingAssistant</span><span class="w"> </span><span class="n">assistant</span><span class="w"> </span><span class="o">=</span>
+<span class="w">        </span><span class="n">AiServices</span><span class="p">.</span><span class="na">builder</span><span class="p">(</span><span class="n">CodingAssistant</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<span class="w">            </span><span class="p">.</span><span class="na">chatModel</span><span class="p">(</span><span class="n">chatModel</span><span class="p">)</span>
+<span class="w">            </span><span class="p">.</span><span class="na">chatMemoryProvider</span><span class="p">(</span><span class="n">memoryId</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                </span><span class="n">MessageWindowChatMemory</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
+<span class="w">                    </span><span class="p">.</span><span class="na">id</span><span class="p">(</span><span class="n">memoryId</span><span class="p">)</span>
+<span class="w">                    </span><span class="p">.</span><span class="na">maxMessages</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+<span class="w">                    </span><span class="p">.</span><span class="na">build</span><span class="p">()</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">            </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>调用：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="n">assistant</span><span class="p">.</span><span class="na">chat</span><span class="p">(</span>
+<span class="w">    </span><span class="s">&quot;conversation-001&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s">&quot;我的项目叫 order-service&quot;</span>
+<span class="p">);</span>
+
+<span class="n">String</span><span class="w"> </span><span class="n">answer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">assistant</span><span class="p">.</span><span class="na">chat</span><span class="p">(</span>
+<span class="w">    </span><span class="s">&quot;conversation-001&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s">&quot;我的项目叫什么？&quot;</span>
+<span class="p">);</span>
+</code></pre></div></div>
+
+<p>林远看着这段代码。</p>
+<p>“这相当于根据 conversationId 获取对应的聊天记忆。”</p>
+<p>“对。”</p>
+<p>“不过这个示例使用默认的内存存储策略，主要用于说明 API。它不能直接保证跨进程共享或者重启持久化。”</p>
+<p>“还有一个重要问题：你希望永久保存全部历史消息吗？”</p>
+<p>“当然。”</p>
+<p>“完整历史需要独立的追加存档；ChatMemoryStore 负责持久化当前记忆窗口，窗口淘汰也会影响存储内容，不能用它替代全量历史。”</p>
+<h3 id="chatmemorystore">四、ChatMemoryStore——把记忆交给数据库</h3>
+<p>周衡写下接口结构：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">DatabaseChatMemoryStore</span>
+<span class="w">        </span><span class="kd">implements</span><span class="w"> </span><span class="n">ChatMemoryStore</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">ChatMessage</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getMessages</span><span class="p">(</span>
+<span class="w">            </span><span class="n">Object</span><span class="w"> </span><span class="n">memoryId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">        </span><span class="c1">// 按会话标识读取当前记忆窗口</span>
+<span class="w">        </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">UnsupportedOperationException</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">updateMessages</span><span class="p">(</span>
+<span class="w">            </span><span class="n">Object</span><span class="w"> </span><span class="n">memoryId</span><span class="p">,</span>
+<span class="w">            </span><span class="n">List</span><span class="o">&lt;</span><span class="n">ChatMessage</span><span class="o">&gt;</span><span class="w"> </span><span class="n">messages</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">        </span><span class="c1">// 将新的记忆窗口持久化</span>
+<span class="w">        </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">UnsupportedOperationException</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">deleteMessages</span><span class="p">(</span><span class="n">Object</span><span class="w"> </span><span class="n">memoryId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">        </span><span class="c1">// 删除相应的记忆</span>
+<span class="w">        </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">UnsupportedOperationException</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>“这里是接口实现骨架，不是已经完成的数据库代码。”</p>
+<p>“你可以用 MyBatis、JPA 或其他持久化方式实现。”</p>
+<p>“但不能忽略并发读写问题。”</p>
+<p>“例如两个请求同时修改同一会话的记忆，如果只是分别读取旧值再覆盖写入，就可能发生丢失更新。”</p>
+<p>“因此要考虑按会话串行化、乐观锁版本号或者数据库事务等策略。”</p>
+<p>林远追问：</p>
+<p>“我已经有 <code>zlai_chat</code> 消息表了，是否还需要另外一张 ChatMemory 表？”</p>
+<p>周衡想了想。</p>
+<p>“可以复用已有历史数据，但要明确不同的生命周期。”</p>
+<p>“我更倾向于分离两层。”</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>ChatHistory
+    保存完整消息树
+    支持历史回放与分支切换
+
+ChatMemory
+    保存当前需要使用的历史窗口
+    支持裁剪、摘要与上下文管理
+</code></pre></div></div>
+
+<p>“因为如果你让窗口记忆直接承担完整历史存储职责，当它淘汰消息时，你可能意外丢失本来应该永久保留的聊天记录。”</p>
+<p>林远点头。</p>
+<p>“这就像 MySQL 存档与 Redis 缓存不能完全混为一谈。”</p>
+<p>“有些相似，但不必机械地把 ChatMemory 当成缓存。它也可能保存经过摘要加工后的工作上下文。”</p>
+<h2 id="_8">第八幕：长期记忆——跨越会话的秘密</h2>
+<p>又过了两天。</p>
+<p>Coding Agent 已经能够记住单个会话中的上下文。</p>
+<p>然而，新问题出现了。</p>
+<p>用户第一次提交 Bug 修复任务：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>项目：order-service
+
+规范：
+所有Java代码必须通过Checkstyle。
+不能修改数据库表结构。
+</code></pre></div></div>
+
+<p>一个星期后。</p>
+<p>用户创建了第二个任务：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>检查 order-service 中的线程安全问题。
+</code></pre></div></div>
+
+<p>Agent 却没有记住此前的开发规范。</p>
+<p>林远皱眉。</p>
+<p>“之前不是已经保存记忆了吗？”</p>
+<p>周衡问道：</p>
+<p>“你是不是创建了新的 thread_id？”</p>
+<p>“是。”</p>
+<p>“那就对了。”</p>
+<p>“短期记忆往往围绕当前 Thread 展开。”</p>
+<p>“如果希望新任务仍然能够获取过去积累的重要信息，就需要跨 Thread 的长期记忆。”</p>
+<h3 id="_9">一、长期记忆究竟保存什么？</h3>
+<p>周衡给林远看了三个例子。</p>
+<p>第一种：事实性记忆（Semantic Memory）</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;project&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;order-service&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;language&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Java&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;framework&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Spring Boot&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;build_tool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Maven&quot;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>这类记忆保存相对稳定的事实。</p>
+<p>第二种：事件性记忆（Episodic Memory）</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;inventory_bug_fix&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;problem&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;高并发扣减出现负库存&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;root_cause&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;检查与扣减未形成可靠的原子约束&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;solution&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;使用条件更新并检查影响行数&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;verified&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>这类记忆保存过去的任务经验。</p>
+<p>第三种：程序性记忆（Procedural Memory）</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>项目工作规范：
+
+1. 修复 Bug 前先构建失败复现。
+2. 修改代码后运行指定测试。
+3. 不允许在未经审批时修改数据库 Schema。
+4. 修改完成后提供变更摘要。
+</code></pre></div></div>
+
+<p>“这些规则可能由项目配置或管理员制定。”</p>
+<p>“但注意，长期记忆里的普通文本不能自动升级为安全策略。”</p>
+<p>“像禁止修改数据库 Schema 这样的硬性要求，除了可以作为模型上下文，还必须由执行层权限策略独立强制。”</p>
+<h3 id="_10">二、长期记忆应该如何检索？</h3>
+<p>林远问：</p>
+<p>“是不是把所有长期记忆放进 Prompt 就行？”</p>
+<p>“不。”</p>
+<p>周衡摇头。</p>
+<p>“长期记忆可能有成千上万条。”</p>
+<p>“你应该根据当前任务，检索相关记忆。”</p>
+<p>例如：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>当前任务：
+修复 order-service 的库存超卖问题
+
+检索条件：
+project = order-service
+category = previous_bug_fix
+keywords = inventory concurrency
+</code></pre></div></div>
+
+<p>系统找到以前的库存修复记录，再将有用内容放入当前上下文。</p>
+<p>“这里就和 RAG 思想产生了联系。”</p>
+<p>“长期记忆既可以使用结构化数据库查询，也可以结合向量检索。”</p>
+<p>“但不是所有信息都适合向量化。”</p>
+<p>“项目 ID、用户权限、版本号、任务状态等精确字段，通常更适合结构化检索和过滤。”</p>
+<h3 id="langgraph-store">三、LangGraph 中的 Store</h3>
+<p>周衡展示了一个简化示例。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">langgraph.store.memory</span> <span class="kn">import</span> <span class="n">InMemoryStore</span>
+
+<span class="n">store</span> <span class="o">=</span> <span class="n">InMemoryStore</span><span class="p">()</span>
+
+<span class="n">namespace</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;projects&quot;</span><span class="p">,</span> <span class="s2">&quot;order-service&quot;</span><span class="p">)</span>
+
+<span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
+    <span class="n">namespace</span><span class="p">,</span>
+    <span class="s2">&quot;coding-rules&quot;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;language&quot;</span><span class="p">:</span> <span class="s2">&quot;Java&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;build_tool&quot;</span><span class="p">:</span> <span class="s2">&quot;Maven&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;checkstyle_required&quot;</span><span class="p">:</span> <span class="kc">True</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="n">memory</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="n">namespace</span><span class="p">,</span>
+    <span class="s2">&quot;coding-rules&quot;</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">memory</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>“这里的 Store 用来保存应用定义的跨 Thread 数据。”</p>
+<p>“而之前的 Checkpointer 保存的是某个 Thread 的执行状态。”</p>
+<p>林远立即总结：</p>
+<p>“Checkpointer 更像记录某个任务现在执行到哪一步。”</p>
+<p>“Store 更像保存多个任务都可能复用的信息。”</p>
+<p>“正确。”</p>
+<p>“但它们都只是存储与读取机制。长期记忆什么时候写入、如何更新、哪些内容可信、何时删除，以及怎么防止跨用户泄漏，依然需要应用自己设计。”</p>
+<h2 id="_11">第九幕：灾难之夜——服务器在第十九步崩溃</h2>
+<p>凌晨两点四十三分。</p>
+<p>林远的 Coding Agent 接到一个复杂任务。</p>
+<p>这次需要分析一个规模较大的 Spring Boot 项目。</p>
+<p>系统开始执行：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>Step 1: 克隆 Git 仓库
+Step 2: 识别项目语言
+Step 3: 分析构建配置
+Step 4: 构建代码索引
+Step 5: 搜索问题相关模块
+...
+Step 17: 生成修复补丁
+Step 18: 应用补丁
+Step 19: 运行测试
+</code></pre></div></div>
+
+<p>就在第十九步。</p>
+<p>监控屏幕突然变红。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>Application terminated unexpectedly.
+</code></pre></div></div>
+
+<p>Spring Boot 进程崩溃了。</p>
+<p>林远迅速重启服务。</p>
+<p>他打开任务页面。</p>
+<p>任务状态却显示：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code>RUNNING
+</code></pre></div></div>
+
+<p>而 Agent 实际上早已停止执行。</p>
+<p>林远低声骂了一句。</p>
+<p>“糟糕。”</p>
+<p>“前面十八步全部白做了？”</p>
+<p>周衡走过来。</p>
+<p>“你保存检查点了吗？”</p>
+<p>“我保存了聊天记录。”</p>
+<p>“我问的是检查点。”</p>
+<p>林远愣住。</p>
+<p>“这两者有什么区别？”</p>
+<p>周衡说道：</p>
+<p>“聊天记录可以告诉你 Agent 以前说过什么、调用过哪些工具。”</p>
+<p>“但它不一定能准确告诉你：当前工作流执行到了哪个阶段、下一步应该运行什么、哪些工具调用已经产生副作用。”</p>
+<p>“尤其是你现在已经修改了文件。”</p>
+<p>“如果任务恢复后重新执行第十八步，会发生什么？”</p>
+<p>林远立即反应过来。</p>
+<p>“可能重复应用补丁。”</p>
+<p>“甚至把文件改坏。”</p>
+<p>“没错。”</p>
+<h3 id="checkpoint">一、Checkpoint 究竟是什么？</h3>
+<p>周衡在白板上写下：</p>
+<p>Checkpoint = 某个执行时刻的状态快照。</p>
+<p>例如：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;task_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;task-10086&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;stage&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TESTING&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;repository&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;order-service&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;patch_applied&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;patch_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;patch-007&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;test_status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PENDING&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;retry_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>它不仅能记录聊天内容，还能记录工作流需要恢复的其他状态。</p>
+<p>周衡解释：</p>
+<p>“在 LangGraph 中，Checkpointer 用于持久化图执行状态。”</p>
+<p>“检查点按照 Thread 组织，可以支持状态恢复、人工审批以及历史状态回溯。”</p>
+<p>“但要注意，它不是自动给任意外部操作提供事务保证。”</p>
+<p>“如果你在一个节点内部执行了不可逆的外部操作，然后在提交检查点前进程崩溃，恢复时仍有可能重复执行该操作。”</p>
+<p>LangGraph 的持久化机制在图执行的 super-step 边界保存状态，并支持一定范围内的故障恢复；外部副作用仍需要业务系统处理幂等性。</p>
+<h3 id="checkpoint-agent">二、用 Checkpoint 恢复 Agent</h3>
+<p>任务开始</p>
+<p>task-10086</p>
+<p>代码分析完成</p>
+<p>Checkpoint A</p>
+<p>生成并应用补丁</p>
+<p>Checkpoint B</p>
+<p>测试阶段进程崩溃</p>
+<p>加载持久化状态并核对外部副作用</p>
+<p>从安全的恢复点继续</p>
+<p>“如果有可靠的持久化状态，并且恢复逻辑正确设计，就可以避免整个任务无条件地从头开始。”</p>
+<p>林远问：</p>
+<p>“是不是只要上了 LangGraph，就天然实现了 exactly-once？”</p>
+<p>周衡摇头。</p>
+<p>“不是。”</p>
+<p>“对于 Git 提交、文件修改、部署、付款等外部副作用，不能仅凭检查点就保证严格的 exactly-once。”</p>
+<p>“你仍然需要考虑幂等键、重复操作检测、事务边界和状态对账。”</p>
+<p>“例如应用补丁时，可以记录补丁 ID、目标 Commit SHA 和结果版本，在恢复时先检查补丁是否已经应用。”</p>
+<p>“这样才可能避免重复修改。”</p>
+<h2 id="java-21-spring-boot">第十幕：Java 21 + Spring Boot 的生产级记忆架构</h2>
+<p>几天后。</p>
+<p>林远把之前学过的所有内容整合进企业级 Coding Agent。</p>
+<p>这次，他没有简单创建一个 <code>MemoryService</code>，然后把所有数据塞进去。</p>
+<p>而是将系统划分成不同职责的存储层。</p>
+<p>Spring Boot Agent Runtime</p>
+<p>任务编排 · 模型调用 · 工具执行</p>
+<p>Chat History</p>
+<p>MySQL</p>
+<p>全部聊天消息、消息树、分支和审计记录</p>
+<p>Context Builder</p>
+<p>应用层</p>
+<p>选择历史、摘要压缩、预算分配与证据注入</p>
+<p>Long-term Store</p>
+<p>MySQL / 向量数据库</p>
+<p>项目知识、规则、经验与长期事实</p>
+<p>Task Checkpoint</p>
+<p>持久化状态存储</p>
+<p>任务阶段、执行进度、审批状态与恢复信息</p>
+<p>周衡说：</p>
+<p>“我们还可以考虑 Redis。”</p>
+<p>林远问：</p>
+<p>“Redis 放在哪？”</p>
+<p>“可以缓存会话窗口、任务状态或热点检索结果。”</p>
+<p>“但是否使用 Redis，取决于你如何设计数据一致性与持久化。”</p>
+<p>“不能因为 Redis 速度快，就默认它是唯一可靠的数据来源。”</p>
+<p>“在多实例部署时，尤其要明确共享状态和并发控制。”</p>
+<h3 id="_12">一、数据库设计</h3>
+<p>林远最终提出四张核心表。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">agent_task</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">task_id</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">user_id</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">conversation_id</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">status</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">current_stage</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">64</span><span class="p">),</span>
+<span class="w">    </span><span class="k">version</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w"> </span><span class="n">DATETIME</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
+<span class="p">);</span>
+</code></pre></div></div>
+
+<p>任务表负责记录任务当前生命周期。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">agent_checkpoint</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTO_INCREMENT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">task_id</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">checkpoint_no</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">state_json</span><span class="w"> </span><span class="n">JSON</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">DATETIME</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">uq_task_checkpoint</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="n">task_id</span><span class="p">,</span><span class="w"> </span><span class="n">checkpoint_no</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="p">);</span>
+</code></pre></div></div>
+
+<p>检查点表保存可序列化的执行状态快照。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">agent_memory</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTO_INCREMENT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">scope_type</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">scope_id</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">memory_key</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">memory_value</span><span class="w"> </span><span class="n">JSON</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w"> </span><span class="n">DATETIME</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">uq_memory</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="n">scope_type</span><span class="p">,</span><span class="w"> </span><span class="n">scope_id</span><span class="p">,</span><span class="w"> </span><span class="n">memory_key</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="p">);</span>
+</code></pre></div></div>
+
+<p>长期记忆表保存可复用的事实和经验。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">agent_context_summary</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">task_id</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">summary</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">last_message_id</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">64</span><span class="p">),</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w"> </span><span class="n">DATETIME</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
+<span class="p">);</span>
+</code></pre></div></div>
+
+<p>摘要表保存已经压缩的上下文。</p>
+<p>“这些只是一个教学用的最小结构。”</p>
+<p>周衡补充：</p>
+<p>“如果进入生产，可能还需要工具调用审计表、任务状态迁移记录、租户隔离、检查点版本控制、数据保留策略等。”</p>
+<p>“另外，现有的消息历史表可以继续负责完整会话存档。”</p>
+<h3 id="java">二、Java 上下文构造器</h3>
+<p>林远开始写一个简化的 ContextBuilder。</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="nd">@Service</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">AgentContextService</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ChatHistoryRepository</span><span class="w"> </span><span class="n">history</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">SummaryRepository</span><span class="w"> </span><span class="n">summaries</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">MemoryRepository</span><span class="w"> </span><span class="n">memories</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">AgentContextService</span><span class="p">(</span>
+<span class="w">            </span><span class="n">ChatHistoryRepository</span><span class="w"> </span><span class="n">history</span><span class="p">,</span>
+<span class="w">            </span><span class="n">SummaryRepository</span><span class="w"> </span><span class="n">summaries</span><span class="p">,</span>
+<span class="w">            </span><span class="n">MemoryRepository</span><span class="w"> </span><span class="n">memories</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">history</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">history</span><span class="p">;</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">summaries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">summaries</span><span class="p">;</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">memories</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">memories</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">AgentContext</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
+<span class="w">            </span><span class="kt">long</span><span class="w"> </span><span class="n">userId</span><span class="p">,</span>
+<span class="w">            </span><span class="n">String</span><span class="w"> </span><span class="n">taskId</span><span class="p">,</span>
+<span class="w">            </span><span class="n">String</span><span class="w"> </span><span class="n">conversationId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">        </span><span class="c1">// 所有查询均需在服务端验证归属和权限</span>
+
+<span class="w">        </span><span class="kd">var</span><span class="w"> </span><span class="n">summary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">summaries</span><span class="p">.</span><span class="na">findByTaskId</span><span class="p">(</span><span class="n">taskId</span><span class="p">);</span>
+
+<span class="w">        </span><span class="kd">var</span><span class="w"> </span><span class="n">recentMessages</span><span class="w"> </span><span class="o">=</span>
+<span class="w">                </span><span class="n">history</span><span class="p">.</span><span class="na">findRecentMessages</span><span class="p">(</span>
+<span class="w">                    </span><span class="n">conversationId</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">);</span>
+
+<span class="w">        </span><span class="kd">var</span><span class="w"> </span><span class="n">relevantMemories</span><span class="w"> </span><span class="o">=</span>
+<span class="w">                </span><span class="n">memories</span><span class="p">.</span><span class="na">findRelevant</span><span class="p">(</span><span class="n">userId</span><span class="p">,</span><span class="w"> </span><span class="n">taskId</span><span class="p">);</span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">AgentContext</span><span class="p">(</span>
+<span class="w">                </span><span class="n">summary</span><span class="p">,</span>
+<span class="w">                </span><span class="n">recentMessages</span><span class="p">,</span>
+<span class="w">                </span><span class="n">relevantMemories</span>
+<span class="w">        </span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>这里的 Repository、AgentContext 是业务抽象，实际仍需实现数据库查询、分支选择、Token 预算及授权校验。</p>
+<p>周衡看完后补充了一个重要问题：</p>
+<p>“如果摘要覆盖了 M1 到 M100，而最近消息又从 M90 开始，你会出现什么问题？”</p>
+<p>林远回答：</p>
+<p>“重复上下文。”</p>
+<p>“对。”</p>
+<p>“所以需要用 <code>last_message_id</code> 或者明确的消息范围，知道摘要覆盖到哪里。”</p>
+<p>“另外，摘要和消息历史最好建立版本关系。”</p>
+<p>“否则后台摘要更新与前台消息追加并发发生时，可能形成不一致的上下文。”</p>
+<h3 id="_13">三、任务恢复的状态机</h3>
+<p>最后，林远设计了以下状态：</p>
+<div class="code-block"><button class="copy-code" type="button">复制代码</button><div class="codehilite"><pre><span></span><code><span class="kd">public</span><span class="w"> </span><span class="kd">enum</span><span class="w"> </span><span class="n">TaskStatus</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">PENDING</span><span class="p">,</span>
+<span class="w">    </span><span class="n">RUNNING</span><span class="p">,</span>
+<span class="w">    </span><span class="n">WAITING_APPROVAL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">RECOVERING</span><span class="p">,</span>
+<span class="w">    </span><span class="n">COMPLETED</span><span class="p">,</span>
+<span class="w">    </span><span class="n">FAILED</span><span class="p">,</span>
+<span class="w">    </span><span class="n">CANCELLED</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>周衡问：</p>
+<p>“如果两个实例同时发现一个 RECOVERING 任务，会怎么样？”</p>
+<p>林远想了想。</p>
+<p>“它们可能同时恢复执行。”</p>
+<p>“所以？”</p>
+<p>“需要任务所有权的原子获取机制。”</p>
+<p>“不错。”</p>
+<p>“比如基于数据库条件更新的版本控制，或者带过期时间的租约机制。”</p>
+<p>“还要处理实例崩溃后租约过期的问题。”</p>
+<p>“这就是为什么生产级 Agent 不只是一个 <code>while</code> 循环。”</p>
+<p>林远看着自己的设计，终于发现：</p>
+<p>过去他只是在编写一个能够对话的程序。</p>
+<p>而现在，他开始设计一个能够长期运行、处理中断、管理状态并控制副作用的执行系统。</p>
+<h2 id="_14">第十一幕：面试官的记忆审判</h2>
+<p>数周后。</p>
+<p>林远参加一家 AI 公司面试。</p>
+<p>面试官问：</p>
+<p>“你的 Coding Agent 怎么解决上下文越来越长的问题？”</p>
+<p>林远回答：</p>
+<p>“首先，我会区分完整聊天历史与当前模型工作上下文。”</p>
+<p>“完整历史存数据库，用于回放和审计。”</p>
+<p>“当前上下文会进行 Token 预算控制，保留必要的系统指令、任务状态、最近消息和重要证据。”</p>
+<p>“对于较长历史，我会通过摘要压缩减少 Token 使用，同时把关键任务字段结构化保存，避免摘要丢失重要约束。”</p>
+<p>面试官继续问：</p>
+<p>“那么短期记忆和长期记忆呢？”</p>
+<p>“短期记忆通常围绕当前会话或执行 Thread，保存当前任务的上下文和状态。”</p>
+<p>“长期记忆则跨会话保存稳定事实、项目知识或者过去的任务经验。”</p>
+<p>“长期记忆需要按身份、项目和业务范围进行隔离，并通过检索按需提供给模型。”</p>
+<p>面试官又问：</p>
+<p>“如果 Agent 在执行到第十步时进程崩溃了，你怎么恢复？”</p>
+<p>林远回答：</p>
+<p>“我会持久化任务执行状态，并在任务恢复时加载最近可靠检查点。”</p>
+<p>“但不能简单恢复后就重复执行所有步骤。”</p>
+<p>“尤其对于产生外部副作用的工具，需要确认此前是否已经执行成功，并通过幂等键、版本检查或者状态对账避免重复操作。”</p>
+<p>面试官问出了最后一个问题。</p>
+<p>“ChatMemory 和 Checkpoint 是同一个东西吗？”</p>
+<p>林远摇头。</p>
+<p>“不是。”</p>
+<p>“ChatMemory 主要服务于模型上下文管理。”</p>
+<p>“Checkpoint 保存的则是工作流执行状态，可能包含消息、步骤、任务变量及其他状态。”</p>
+<p>“在 LangGraph 中，短期记忆可以依赖 Checkpointer 持久化，但不能因此认为两者的概念完全相同。”</p>
+<p>面试官合上电脑。</p>
+<p>“可以。下一题。”</p>
+<h2 id="_15">本章核心知识归档</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="可横向滚动的数据表"><table>
+<thead>
+<tr>
+<th>核心概念</th>
+<th>真正需要理解的内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chat History</td>
+<td>历史消息的完整存档</td>
+</tr>
+<tr>
+<td>Context Window</td>
+<td>模型一次推理可处理的上下文容量</td>
+</tr>
+<tr>
+<td>Token Budget</td>
+<td>输入、工具、检索和输出的容量分配</td>
+</tr>
+<tr>
+<td>Message Window</td>
+<td>仅保留最近的一部分消息</td>
+</tr>
+<tr>
+<td>Token Trimming</td>
+<td>按 Token 容量裁剪消息</td>
+</tr>
+<tr>
+<td>Summarization</td>
+<td>将较长历史压缩成摘要</td>
+</tr>
+<tr>
+<td>Short-term Memory</td>
+<td>当前 Thread 或任务的记忆</td>
+</tr>
+<tr>
+<td>Long-term Memory</td>
+<td>跨会话保存和检索有用信息</td>
+</tr>
+<tr>
+<td>Checkpointer</td>
+<td>持久化工作流状态快照</td>
+</tr>
+<tr>
+<td>Thread ID</td>
+<td>标识独立执行线程的状态</td>
+</tr>
+<tr>
+<td>ChatMemoryStore</td>
+<td>LangChain4j 的聊天记忆存储接口</td>
+</tr>
+<tr>
+<td>幂等性</td>
+<td>避免任务恢复时重复产生副作用</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="_16">检验一下理解程度</h3>
+<p>第三章 · 知识考核</p>
+<p>1 / 4</p>
+<h2 id="mysql">MySQL 保存了全部历史消息，为什么模型仍然可能忘记早期信息？</h2>
+<p><strong>参考思路：</strong>持久化不等于上下文注入。模型只能使用本次请求提供的消息与证据；应用需要按分支选择、预算裁剪、摘要或检索历史，并保留完整的工具调用与结果配对。</p>
+<h2 id="_17">尾声：记忆之外，还有未知的知识</h2>
+<p>凌晨四点。</p>
+<p>林远成功恢复了一个此前中断的 Coding Agent 任务。</p>
+<p>模型能够记住任务目标。</p>
+<p>能够读取已完成步骤。</p>
+<p>能够知道自己修改过哪些文件。</p>
+<p>也能够根据已经保存的测试结果继续工作。</p>
+<p>他终于松了口气。</p>
+<p>“记忆系统总算完成了。”</p>
+<p>就在这时，客户发来了一份新的需求。</p>
+<blockquote>
+<p>我们希望 Agent 不只是修复代码。</p>
+<p>还需要根据公司内部十万份技术文档、开发规范和历史故障报告，判断如何设计修复方案。</p>
+</blockquote>
+<p>林远望着屏幕。</p>
+<p>“十万份文档？”</p>
+<p>“那怎么放进上下文？”</p>
+<p>周衡回答：</p>
+<p>“当然不能全部放进去。”</p>
+<p>“而且，这一次的问题也不只是记忆。”</p>
+<p>他打开一份文档。</p>
+<p>文档标题写着：</p>
+<p>《2026 年企业研发安全与代码发布规范》。</p>
+<p>“用户没有在聊天中告诉过模型这些知识。”</p>
+<p>“模型训练阶段也不一定见过这些私有文档。”</p>
+<p>“但你希望它在回答问题时，能够利用这些资料。”</p>
+<p>“那么，你需要给它建立一座能够随时查询的知识图书馆。”</p>
+<p>林远抬起头。</p>
+<p>“RAG？”</p>
+<p>周衡点头。</p>
+<p>“是的。”</p>
+<p>“不过真正困难的地方，绝不是简单地把文档转成向量。”</p>
+<details class="source-media"><summary>原文配图链接（可选）</summary><p><a href="https://images.openai.com/static-rsc-4/jSlenu9z1s5pPOVqow4elyQvHbhAh_v47uDx52EjI7ix_QpdWw67dAk07runBdkBBhcU-ax0phSYbNQilhmTn4xt7SS_pj0I7uY564N1iSVpE8H7ATlCfBXelaGN9Tzg2mU6iIt21uD6WFjcpW7XvQtH0hewHbXNOqd6hoWRDjU?purpose=inline">原文配图：Estrutura de Dados e Algoritmos, um Resumo dos Mais Utilizados em JavaScript e NodeJS | by Jonathan Juliani | Medium</a>
+下一章 · 《LangChain 帝国》第四章</p></details>
+<h3 id="agent">《知识图书馆——当 Agent 学会检索世界》</h3>
+<p>从最基础开始，深入讲解 Document Loader、Text Splitter、Embedding、Vector Store、Retriever、RAG Chain、BM25、Hybrid Search、Reranker、Context Engineering、LangChain RAG 实现，以及 Java/Spring Boot 企业知识库的完整架构。</p>
+<p>技术参考：<a href="https://docs.langchain.com/oss/python/langchain/short-term-memory">LangChain Short-term Memory</a> · <a href="https://docs.langchain.com/oss/python/langgraph/persistence">LangGraph Persistence</a> · <a href="https://docs.langchain4j.dev/tutorials/chat-memory/">LangChain4j Chat Memory</a></p></article><nav class="chapter-nav" aria-label="上下章"><a href="chapter-02.html">← 上一章</a><a href="chapter-04.html">下一章 →</a></nav></main></div><footer><a href="index.html">LangChain 帝国</a> · 五章正文 · 第六章待续<br><a href="reading.html">我的阅读</a> · <a href="editorial.html">内容说明与技术来源</a> · <a href="https://github.com/wupzl/langchain-empire-reader">项目源码 ↗</a><br><small>小说式工程学习 · 无需登录 · 阅读进度保存在当前浏览器</small></footer>
+<dialog id="search-dialog" aria-labelledby="search-title"><div class="dialog-heading"><h2 id="search-title">搜索全书</h2><button id="search-close" aria-label="关闭搜索">×</button></div><label for="query">关键词或代码，例如 工具调用、Checkpoint、InMemorySaver</label><input id="query" type="search" placeholder="搜索五章正文…" autocomplete="off"><p id="search-status" role="status">输入关键词开始搜索</p><div id="search-results"></div></dialog><div id="toast" role="status" aria-live="polite"></div></body></html>

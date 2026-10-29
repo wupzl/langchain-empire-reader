@@ -1,0 +1,38 @@
+{
+  "title": "LangChain 帝国",
+  "slug": "langchain-empire-reader",
+  "status": "连载",
+  "nextChapter": 6,
+  "chapters": [
+    {
+      "number": 1,
+      "title": "失控的 API——当大模型不再只是聊天",
+      "topics": "模型抽象 · LCEL · LangChain4j",
+      "note": "本书以 LangChain v1 的 Agent API 为主要语境，保留 LCEL 的组合思想。Java 与 Python 属于不同生态。模型名为占位符，使用前请按供应商配置密钥及可用模型。"
+    },
+    {
+      "number": 2,
+      "title": "工具觉醒——让大模型拥有双手",
+      "topics": "Tool Calling · ReAct · Agent Loop",
+      "note": "工具调用是行动请求，由应用运行时执行。示例区分供应商原始 JSON 与 LangChain 标准化 tool_calls；工具白名单不能替代租户授权、执行隔离或预算控制。"
+    },
+    {
+      "number": 3,
+      "title": "记忆迷宫——当 Agent 开始遗忘",
+      "topics": "Chat History · Memory · Checkpoint",
+      "note": "ChatMemory 保存当前窗口，不等于完整历史。InMemorySaver 与 InMemoryStore 仅保存在进程内；重启恢复需要持久化后端，thread_id 不能替代身份和权限校验。"
+    },
+    {
+      "number": 4,
+      "title": "知识图书馆——当 Agent 学会检索世界",
+      "topics": "RAG · 混合检索 · 精排与评测",
+      "note": "RAG 不会自动保证事实正确。示例中的向量库保存在内存，未实现多租户权限与生产索引。公式和评测数字均为教学示例，线上应以自己的数据集验证。"
+    },
+    {
+      "number": 5,
+      "title": "命运之图——LangGraph 与 Agent 的执行法则",
+      "topics": "StateGraph · Reducer · Interrupt",
+      "note": "最小 StateGraph 示例不调用模型，第二次通过是人为设定的测试结果。Checkpoint 不会回滚外部世界；审批恢复需要同一 Thread、可靠持久化及副作用幂等处理。"
+    }
+  ]
+}
